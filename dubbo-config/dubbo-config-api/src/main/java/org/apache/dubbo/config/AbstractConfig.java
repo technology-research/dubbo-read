@@ -24,11 +24,7 @@ import org.apache.dubbo.common.constants.CommonConstants;
 import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
-import org.apache.dubbo.common.utils.ClassUtils;
-import org.apache.dubbo.common.utils.CollectionUtils;
-import org.apache.dubbo.common.utils.MethodUtils;
-import org.apache.dubbo.common.utils.ReflectUtils;
-import org.apache.dubbo.common.utils.StringUtils;
+import org.apache.dubbo.common.utils.*;
 import org.apache.dubbo.config.context.ConfigConfigurationAdapter;
 import org.apache.dubbo.config.support.Parameter;
 import org.apache.dubbo.rpc.model.ConsumerMethodModel;
@@ -149,32 +145,49 @@ public abstract class AbstractConfig implements Serializable {
     }
 
     protected static void appendParameters(Map<String, String> parameters, Object config) {
+        //附加变量
         appendParameters(parameters, config, null);
     }
-
+    /**
+     * 将配置对象的属性，添加到参数集合
+     *
+     * @param parameters 参数集合 实际上，该集合会用于 URL.parameters 。
+     * @param config 配置对象
+     * @param prefix 属性前缀。用于配置项添加到parameters中时的前缀
+     */
     @SuppressWarnings("unchecked")
     protected static void appendParameters(Map<String, String> parameters, Object config, String prefix) {
+        //配置不等于null
         if (config == null) {
             return;
         }
+        //获取所有方法的数组，为下面通过反射获取配置项的值做准备
         Method[] methods = config.getClass().getMethods();
         for (Method method : methods) {
             try {
+                //得到方法名
                 String name = method.getName();
+                //判断是否为get方法
                 if (MethodUtils.isGetter(method)) {
+                    //得到Parameter注解类
                     Parameter parameter = method.getAnnotation(Parameter.class);
+                    //返回值类型为 Object 或排除( `@Parameter.exclue=true` )的配置项，跳过。
                     if (method.getReturnType() == Object.class || parameter != null && parameter.excluded()) {
                         continue;
                     }
                     String key;
                     if (parameter != null && parameter.key().length() > 0) {
+                        //得到key
                         key = parameter.key();
                     } else {
+                        //计算属性来着get
                         key = calculatePropertyFromGetter(name);
                     }
+                    //invoke注入配置， 获得属性值
                     Object value = method.invoke(config);
                     String str = String.valueOf(value).trim();
                     if (value != null && str.length() > 0) {
+                        //转义
                         if (parameter != null && parameter.escaped()) {
                             str = URL.encode(str);
                         }
@@ -213,11 +226,18 @@ public abstract class AbstractConfig implements Serializable {
         }
     }
 
+
     @Deprecated
     protected static void appendAttributes(Map<String, Object> parameters, Object config) {
         appendAttributes(parameters, config, null);
     }
-
+    /**
+     * 将带有 @Parameter(attribute = true) 配置对象的属性，添加到参数集合
+     *
+     * @param parameters 参数集合
+     * @param config 配置对象
+     * @param prefix 前缀
+     */
     @Deprecated
     protected static void appendAttributes(Map<String, Object> parameters, Object config, String prefix) {
         if (config == null) {
@@ -232,12 +252,14 @@ public abstract class AbstractConfig implements Serializable {
                 }
                 String name = method.getName();
                 if (MethodUtils.isGetter(method)) {
+                    //获取属性名
                     String key;
                     if (parameter.key().length() > 0) {
                         key = parameter.key();
                     } else {
                         key = calculateAttributeFromGetter(name);
                     }
+                    //获得属性值，存在则添加到parameters的集合
                     Object value = method.invoke(config);
                     if (value != null) {
                         if (prefix != null && prefix.length() > 0) {
@@ -415,11 +437,13 @@ public abstract class AbstractConfig implements Serializable {
     }
 
     private static String calculatePropertyFromGetter(String name) {
+        // 获得属性名
         int i = name.startsWith("get") ? 3 : 2;
         return StringUtils.camelToSplitName(name.substring(i, i + 1).toLowerCase() + name.substring(i + 1), ".");
     }
 
     private static String calculateAttributeFromGetter(String getter) {
+        //获取属性名
         int i = getter.startsWith("get") ? 3 : 2;
         return getter.substring(i, i + 1).toLowerCase() + getter.substring(i + 1);
     }
