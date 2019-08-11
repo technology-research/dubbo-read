@@ -93,7 +93,12 @@ public class ConfigManager {
 
     }
 
+    /**
+     * 返回Optional包装的ApplicationConfig
+     * @return
+     */
     public Optional<ApplicationConfig> getApplication() {
+        //如果为空返回空，否则返回application
         return Optional.ofNullable(application);
     }
 

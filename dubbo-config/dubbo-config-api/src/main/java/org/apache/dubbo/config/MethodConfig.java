@@ -34,6 +34,7 @@ import static org.apache.dubbo.config.Constants.ON_THROW_METHOD_KEY;
 
 /**
  * The method configuration
+ * 方法级别配置
  *
  * @export
  */

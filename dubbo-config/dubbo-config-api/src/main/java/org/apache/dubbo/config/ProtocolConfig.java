@@ -41,8 +41,8 @@ import static org.apache.dubbo.remoting.Constants.DUBBO_VERSION_KEY;
 
 /**
  * ProtocolConfig
- *
- *
+ * 服务提供者协议配置
+ * http://dubbo.apache.org/zh-cn/docs/user/references/xml/dubbo-protocol.html
  * @export
  */
 public class ProtocolConfig extends AbstractConfig {
