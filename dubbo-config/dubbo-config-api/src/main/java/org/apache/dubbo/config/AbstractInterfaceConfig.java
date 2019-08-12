@@ -257,6 +257,9 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         ConfigManager.getInstance().refreshAll();
     }
 
+    /**
+     * 预处理环境
+     */
     private void prepareEnvironment() {
         if (configCenter.isValid()) {
             if (!configCenter.checkOrUpdateInited()) {
@@ -304,20 +307,28 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         if (CollectionUtils.isNotEmpty(registries)) {
             for (RegistryConfig config : registries) {
                 String address = config.getAddress();
+                //如果address=null，默认为0.0.0.0
                 if (StringUtils.isEmpty(address)) {
                     address = ANYHOST_VALUE;
                 }
+                //如果配置中心地址可用
                 if (!RegistryConfig.NO_AVAILABLE.equalsIgnoreCase(address)) {
                     Map<String, String> map = new HashMap<String, String>();
+                    //将配置对象的属性，添加到参数集合
                     appendParameters(map, application);
                     appendParameters(map, config);
+                    //将path设置为注册服务的名称
                     map.put(PATH_KEY, RegistryService.class.getName());
+                    //追加运行时遍历
                     appendRuntimeParameters(map);
+                    //默认为dubbo协议
                     if (!map.containsKey(PROTOCOL_KEY)) {
                         map.put(PROTOCOL_KEY, DUBBO_PROTOCOL);
                     }
+                    //将地址和map解析为urls集合
                     List<URL> urls = UrlUtils.parseURLs(address, map);
 
+                    //遍历封装
                     for (URL url : urls) {
                         url = URLBuilder.from(url)
                                 .addParameter(REGISTRY_KEY, url.getProtocol())
@@ -411,8 +422,11 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
      * Check whether the remote service interface and the methods meet with Dubbo's requirements.it mainly check, if the
      * methods configured in the configuration file are included in the interface of remote service
      *
-     * @param interfaceClass the interface of remote service
-     * @param methods        the methods configured
+     * 验接口和方法集合校
+     * 1.接口类非空，并且是接口
+     * 2.方法在接口中已定义
+     * @param interfaceClass the interface of remote service 远程服务的接口
+     * @param methods        the methods configured 方法配置集合
      */
     protected void checkInterfaceAndMethods(Class<?> interfaceClass, List<MethodConfig> methods) {
         // interface cannot be null
@@ -425,8 +439,11 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         // check if methods exist in the remote service interface
         if (CollectionUtils.isNotEmpty(methods)) {
             for (MethodConfig methodBean : methods) {
+                //设置服务
                 methodBean.setService(interfaceClass.getName());
+                //设置服务id
                 methodBean.setServiceId(this.getId());
+                //刷新配置
                 methodBean.refresh();
                 String methodName = methodBean.getName();
                 if (StringUtils.isEmpty(methodName)) {
@@ -447,6 +464,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     /**
      * Legitimacy check and setup of local simulated operations. The operations can be a string with Simple operation or
      * a classname whose {@link Class} implements a particular function
+     * 校验Mock 相关的配置
      *
      * @param interfaceClass for provider side, it is the {@link Class} of the service that will be exported; for consumer
      *                       side, it is the {@link Class} of the remote service interface that will be referenced
@@ -458,6 +476,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
 
         String normalizedMock = MockInvoker.normalizeMock(mock);
         if (normalizedMock.startsWith(RETURN_PREFIX)) {
+            //获得return 后的东西
             normalizedMock = normalizedMock.substring(RETURN_PREFIX.length()).trim();
             try {
                 //Check whether the mock value is legal, if it is illegal, throw exception
@@ -486,6 +505,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
     /**
      * Legitimacy check of stub, note that: the local will deprecated, and replace with <code>stub</code>
      *
+     *  Stub 和 Local
      * @param interfaceClass for provider side, it is the {@link Class} of the service that will be exported; for consumer
      *                       side, it is the {@link Class} of the remote service interface
      */

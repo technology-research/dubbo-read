@@ -219,6 +219,9 @@ final public class MockInvoker<T> implements Invoker<T> {
             return mock;
         }
 
+        /**
+         * mock为return
+         */
         if (RETURN_KEY.equalsIgnoreCase(mock)) {
             return RETURN_PREFIX + "null";
         }
@@ -227,6 +230,7 @@ final public class MockInvoker<T> implements Invoker<T> {
             return "default";
         }
 
+        //mock以fail:开头
         if (mock.startsWith(FAIL_PREFIX)) {
             mock = mock.substring(FAIL_PREFIX.length()).trim();
         }

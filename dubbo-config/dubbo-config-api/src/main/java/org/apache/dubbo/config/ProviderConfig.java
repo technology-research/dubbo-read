@@ -35,10 +35,12 @@ import static org.apache.dubbo.remoting.Constants.TELNET;
 
 /**
  * The service provider default configuration
- *
+ * 服务提供者缺省值配置。
  * @export
  * @see org.apache.dubbo.config.ProtocolConfig
  * @see org.apache.dubbo.config.ServiceConfig
+ * http://dubbo.apache.org/zh-cn/docs/user/references/xml/dubbo-provider.html
+ * 同时该标签为<dubbo:service></dubbo:service>和<dubbo:protocol></dubbo:protocol>标签的缺省值设置
  */
 public class ProviderConfig extends AbstractServiceConfig {
 
