@@ -99,10 +99,15 @@ public abstract class AbstractConfig implements Serializable {
 
     /**
      * The suffix container
+     * 配置类名的后缀
+     * 例如，ServiceConfig 后缀为 Config；ServiceBean 后缀为 Bean
      */
     private static final String[] SUFFIXES = new String[]{"Config", "Bean"};
 
     static {
+        /**
+         * 初始化默认配置
+         */
         LEGACY_PROPERTIES.put("dubbo.protocol.name", "dubbo.service.protocol");
         LEGACY_PROPERTIES.put("dubbo.protocol.host", "dubbo.service.server.host");
         LEGACY_PROPERTIES.put("dubbo.protocol.port", "dubbo.service.server.port");
@@ -122,6 +127,15 @@ public abstract class AbstractConfig implements Serializable {
     protected String id;
     protected String prefix;
 
+    /**
+     * 将键对应的值转换成目标的值。
+     *
+     * 因为，新老配置可能有一些差异，通过该方法进行转换。
+     *
+     * @param key 键
+     * @param value 值
+     * @return 转换后的值
+     */
     private static String convertLegacyValue(String key, String value) {
         if (value != null && value.length() > 0) {
             if ("dubbo.service.max.retry.providers".equals(key)) {
@@ -133,6 +147,12 @@ public abstract class AbstractConfig implements Serializable {
         return value;
     }
 
+    /**
+     * 获取类名对应的属性标签，例如，ServiceConfig 对应为 service 。
+     *
+     * @param cls
+     * @return
+     */
     private static String getTagName(Class<?> cls) {
         String tag = cls.getSimpleName();
         for (String suffix : SUFFIXES) {
@@ -149,12 +169,13 @@ public abstract class AbstractConfig implements Serializable {
         //附加变量
         appendParameters(parameters, config, null);
     }
+
     /**
      * 将配置对象的属性，添加到参数集合
      *
      * @param parameters 参数集合 实际上，该集合会用于 URL.parameters 。
-     * @param config 配置对象
-     * @param prefix 属性前缀。用于配置项添加到parameters中时的前缀
+     * @param config     配置对象
+     * @param prefix     属性前缀。用于配置项添加到parameters中时的前缀
      */
     @SuppressWarnings("unchecked")
     protected static void appendParameters(Map<String, String> parameters, Object config, String prefix) {
@@ -232,12 +253,13 @@ public abstract class AbstractConfig implements Serializable {
     protected static void appendAttributes(Map<String, Object> parameters, Object config) {
         appendAttributes(parameters, config, null);
     }
+
     /**
      * 将带有 @Parameter(attribute = true) 配置对象的属性，添加到参数集合
      *
      * @param parameters 参数集合
-     * @param config 配置对象
-     * @param prefix 前缀
+     * @param config     配置对象
+     * @param prefix     前缀
      */
     @Deprecated
     protected static void appendAttributes(Map<String, Object> parameters, Object config, String prefix) {
@@ -560,6 +582,7 @@ public abstract class AbstractConfig implements Serializable {
 
     @Parameter(excluded = true)
     public String getPrefix() {
+        //得到前缀如prefix为空的话为dubbo.得到的tag，如ServiceConfig为dubbo.service
         return StringUtils.isNotEmpty(prefix) ? prefix : (CommonConstants.DUBBO + "." + getTagName(this.getClass()));
     }
 
@@ -570,11 +593,15 @@ public abstract class AbstractConfig implements Serializable {
     /**
      * TODO: Currently, only support overriding of properties explicitly defined in Config class, doesn't support
      * overriding of customized parameters stored in 'parameters'.
+     * 刷新配置，读取启动参数变量和 properties 配置到配置对象。
      */
     public void refresh() {
         try {
+            //根据前缀和服务id得到综合配置
             CompositeConfiguration compositeConfiguration = Environment.getInstance().getConfiguration(getPrefix(), getId());
+            //配置适配器
             Configuration config = new ConfigConfigurationAdapter(this);
+            //配置是否第一加载
             if (Environment.getInstance().isConfigCenterFirst()) {
                 // The sequence would be: SystemConfiguration -> AppExternalConfiguration -> ExternalConfiguration -> AbstractConfig -> PropertiesConfiguration
                 compositeConfiguration.addConfiguration(4, config);
@@ -584,12 +611,15 @@ public abstract class AbstractConfig implements Serializable {
             }
 
             // loop methods, get override value and set the new value back to method
+            //循环方法，得到覆盖的值和设置的新值
             Method[] methods = getClass().getMethods();
             for (Method method : methods) {
+                //方法是public的setting方法
                 if (MethodUtils.isSetter(method)) {
                     try {
                         String value = StringUtils.trim(compositeConfiguration.getString(extractPropertyName(getClass(), method)));
                         // isTypeMatch() is called to avoid duplicate and incorrect update, for example, we have two 'setGeneric' methods in ReferenceConfig.
+                        // 获取到值，进行反射设置。
                         if (StringUtils.isNotEmpty(value) && ClassUtils.isTypeMatch(method.getParameterTypes()[0], value)) {
                             method.invoke(this, ClassUtils.convertPrimitive(method.getParameterTypes()[0], value));
                         }

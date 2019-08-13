@@ -277,6 +277,8 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                         );
             }
             try {
+
+                //设置加载顺序
                 Environment.getInstance().setConfigCenterFirst(configCenter.isHighestPriority());
                 Environment.getInstance().updateExternalConfigurationMap(parseProperties(configContent));
                 Environment.getInstance().updateAppExternalConfigurationMap(parseProperties(appConfigContent));

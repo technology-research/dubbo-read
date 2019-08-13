@@ -114,10 +114,15 @@ public class Environment {
     public CompositeConfiguration getConfiguration(String prefix, String id) {
         CompositeConfiguration compositeConfiguration = new CompositeConfiguration();
         // Config center has the highest priority
+        //从启动参数变量优先从带有Config#id的配置中获取，如dubbo.application.demo-provider.name
         compositeConfiguration.addConfiguration(this.getSystemConfig(prefix, id));
+        //环境配置  【启动参数变量】获取不到，其次不带 `Config#id` 的配置中获取，例如：`dubbo.application.name`
         compositeConfiguration.addConfiguration(this.getEnvironmentConfig(prefix, id));
+        //app外部配置
         compositeConfiguration.addConfiguration(this.getAppExternalConfig(prefix, id));
+        //外部配置
         compositeConfiguration.addConfiguration(this.getExternalConfig(prefix, id));
+        //得到属性配置
         compositeConfiguration.addConfiguration(this.getPropertiesConfig(prefix, id));
         return compositeConfiguration;
     }
