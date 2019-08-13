@@ -17,24 +17,16 @@
 package org.apache.dubbo.config.spring.schema;
 
 import org.apache.dubbo.common.Version;
-
-import org.apache.dubbo.config.ApplicationConfig;
-import org.apache.dubbo.config.MetadataReportConfig;
-import org.apache.dubbo.config.ModuleConfig;
-import org.apache.dubbo.config.RegistryConfig;
-import org.apache.dubbo.config.MonitorConfig;
-import org.apache.dubbo.config.MetricsConfig;
-import org.apache.dubbo.config.ProviderConfig;
-import org.apache.dubbo.config.ConsumerConfig;
-import org.apache.dubbo.config.ProtocolConfig;
+import org.apache.dubbo.config.*;
 import org.apache.dubbo.config.spring.ConfigCenterBean;
 import org.apache.dubbo.config.spring.ReferenceBean;
 import org.apache.dubbo.config.spring.ServiceBean;
-
 import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
 
 /**
  * DubboNamespaceHandler
+ * 定义了 Dubbo 的 XML Namespace 的处理器 DubboNamespaceHandler
+ * 解析xml配置
  *
  * @export
  */
@@ -44,6 +36,9 @@ public class DubboNamespaceHandler extends NamespaceHandlerSupport {
         Version.checkDuplicate(DubboNamespaceHandler.class);
     }
 
+    /**
+     * 定义了每个 <xsd:element /> 对应的 org.springframework.beans.factory.xml.BeanDefinitionParser
+     */
     @Override
     public void init() {
         registerBeanDefinitionParser("application", new DubboBeanDefinitionParser(ApplicationConfig.class, true));
@@ -56,8 +51,13 @@ public class DubboNamespaceHandler extends NamespaceHandlerSupport {
         registerBeanDefinitionParser("provider", new DubboBeanDefinitionParser(ProviderConfig.class, true));
         registerBeanDefinitionParser("consumer", new DubboBeanDefinitionParser(ConsumerConfig.class, true));
         registerBeanDefinitionParser("protocol", new DubboBeanDefinitionParser(ProtocolConfig.class, true));
+        /**
+         * service 标签使用的是 ServiceBean ，而不是 ServiceConfig ，reference 表示用的是 ReferenceBean ，
+         * 因为无论是 ServiceConfig 还是 ReferenceBean ，在解析完具体配置后，需要调用它们对应的方法进行初始化
+         */
         registerBeanDefinitionParser("service", new DubboBeanDefinitionParser(ServiceBean.class, true));
         registerBeanDefinitionParser("reference", new DubboBeanDefinitionParser(ReferenceBean.class, false));
+        //注解Bean解析器
         registerBeanDefinitionParser("annotation", new AnnotationBeanDefinitionParser());
     }
 
