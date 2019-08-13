@@ -20,11 +20,7 @@ import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.Version;
 import org.apache.dubbo.common.bytecode.Wrapper;
 import org.apache.dubbo.common.extension.ExtensionLoader;
-import org.apache.dubbo.common.utils.ClassUtils;
-import org.apache.dubbo.common.utils.CollectionUtils;
-import org.apache.dubbo.common.utils.ConfigUtils;
-import org.apache.dubbo.common.utils.NetUtils;
-import org.apache.dubbo.common.utils.StringUtils;
+import org.apache.dubbo.common.utils.*;
 import org.apache.dubbo.config.annotation.Reference;
 import org.apache.dubbo.config.context.ConfigManager;
 import org.apache.dubbo.config.support.Parameter;
@@ -47,36 +43,21 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
-import static org.apache.dubbo.common.constants.CommonConstants.ANY_VALUE;
-import static org.apache.dubbo.common.constants.CommonConstants.COMMA_SEPARATOR;
-import static org.apache.dubbo.common.constants.CommonConstants.CONSUMER_SIDE;
-import static org.apache.dubbo.common.constants.CommonConstants.DUBBO;
-import static org.apache.dubbo.common.constants.CommonConstants.INTERFACE_KEY;
-import static org.apache.dubbo.common.constants.CommonConstants.LOCALHOST_VALUE;
-import static org.apache.dubbo.common.constants.CommonConstants.METHODS_KEY;
-import static org.apache.dubbo.common.constants.CommonConstants.REVISION_KEY;
-import static org.apache.dubbo.common.constants.CommonConstants.SEMICOLON_SPLIT_PATTERN;
-import static org.apache.dubbo.common.constants.CommonConstants.SIDE_KEY;
-import static org.apache.dubbo.common.constants.CommonConstants.CLUSTER_KEY;
-import static org.apache.dubbo.config.Constants.DUBBO_IP_TO_REGISTRY;
-import static org.apache.dubbo.rpc.cluster.Constants.REFER_KEY;
-import static org.apache.dubbo.registry.Constants.REGISTER_IP_KEY;
-import static org.apache.dubbo.common.constants.CommonConstants.MONITOR_KEY;
-import static org.apache.dubbo.registry.Constants.CONSUMER_PROTOCOL;
+import static org.apache.dubbo.common.constants.CommonConstants.*;
 import static org.apache.dubbo.common.constants.RegistryConstants.REGISTRY_PROTOCOL;
-import static org.apache.dubbo.rpc.Constants.LOCAL_PROTOCOL;
 import static org.apache.dubbo.common.utils.NetUtils.isInvalidLocalHost;
+import static org.apache.dubbo.config.Constants.DUBBO_IP_TO_REGISTRY;
+import static org.apache.dubbo.registry.Constants.CONSUMER_PROTOCOL;
+import static org.apache.dubbo.registry.Constants.REGISTER_IP_KEY;
+import static org.apache.dubbo.rpc.Constants.LOCAL_PROTOCOL;
+import static org.apache.dubbo.rpc.cluster.Constants.REFER_KEY;
 
 /**
  * ReferenceConfig
+ * 服务消费者引用服务配置类
+ * http://dubbo.apache.org/zh-cn/docs/user/references/xml/dubbo-consumer.html
  *
  * @export
  */
@@ -172,6 +153,9 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
      */
     private transient volatile boolean destroyed;
 
+    /**
+     * 回收ReferenceConfig对象回调用
+     */
     @SuppressWarnings("unused")
     private final Object finalizerGuardian = new Object() {
         @Override
@@ -219,8 +203,11 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         completeCompoundConfigs();
         startConfigCenter();
         // get consumer's global configuration
+        //检查默认配置，读取属性配置( 环境变量 + properties 属性 )到 ConsumerConfig 对象
         checkDefault();
+        //刷新配置
         this.refresh();
+        //对泛化接口处理
         if (getGeneric() == null && getConsumer() != null) {
             setGeneric(getConsumer().getGeneric());
         }
@@ -233,25 +220,45 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             } catch (ClassNotFoundException e) {
                 throw new IllegalStateException(e.getMessage(), e);
             }
+            // 校验接口和方法
             checkInterfaceAndMethods(interfaceClass, methods);
         }
         resolveFile();
+        /**
+         *  校验ApplicationConfig配置
+         *   实际上，该方法会初始化ApplicationConfig的属性
+         */
         checkApplication();
         checkMetadataReport();
     }
 
+    /**
+     * 1.进一步初始化 ReferenceConfig 对象。
+     * 2.校验 ReferenceConfig 对象的配置项。
+     * 3.使用 ReferenceConfig 对象，生成 Dubbo URL 对象数组。
+     * 4.使用 Dubbo URL 对象，应用服务。
+     *
+     * @return
+     */
     public synchronized T get() {
+        //校验和更新Sub配置
         checkAndUpdateSubConfigs();
 
+        //引用已经销毁不可获得
         if (destroyed) {
             throw new IllegalStateException("The invoker of ReferenceConfig(" + url + ") has already destroyed!");
         }
+        //ref对象为空，初始化
         if (ref == null) {
             init();
         }
+        //返回引用服务
         return ref;
     }
 
+    /**
+     * 销毁方法
+     */
     public synchronized void destroy() {
         if (ref == null) {
             return;
@@ -270,17 +277,22 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     }
 
     private void init() {
+        //已经初始化过直接返回
         if (initialized) {
             return;
         }
+        //校验stub和local配置
         checkStubAndLocal(interfaceClass);
+        //校验mock
         checkMock(interfaceClass);
         Map<String, String> map = new HashMap<String, String>();
-
+        //放入side，和运行时变量
         map.put(SIDE_KEY, CONSUMER_SIDE);
 
         appendRuntimeParameters(map);
+        //是否泛化引用
         if (!isGeneric()) {
+            //得到版本
             String revision = Version.getVersion(interfaceClass, version);
             if (revision != null && revision.length() > 0) {
                 map.put(REVISION_KEY, revision);
@@ -295,6 +307,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
             }
         }
         map.put(INTERFACE_KEY, interfaceName);
+        //追加变量到map集合中
         appendParameters(map, metrics);
         appendParameters(map, application);
         appendParameters(map, module);
@@ -303,10 +316,13 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         appendParameters(map, consumer);
         appendParameters(map, this);
         Map<String, Object> attributes = null;
+         // 将 MethodConfig 对象数组，添加到 `map` 集合中。
         if (CollectionUtils.isNotEmpty(methods)) {
             attributes = new HashMap<String, Object>();
             for (MethodConfig methodConfig : methods) {
+                // 将 MethodConfig 对象，添加到 `map` 集合中。
                 appendParameters(map, methodConfig, methodConfig.getName());
+                // 当 配置了 `MethodConfig.retry = false` 时，强制禁用重试
                 String retryKey = methodConfig.getName() + ".retry";
                 if (map.containsKey(retryKey)) {
                     String retryValue = map.remove(retryKey);
@@ -317,7 +333,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 attributes.put(methodConfig.getName(), convertMethodConfig2AsyncInfo(methodConfig));
             }
         }
-
+        // 以系统环境变量( DUBBO_IP_TO_REGISTRY ) 作为服务注册地址，参见 https://github.com/dubbo/dubbo-docker-sample 项目。
         String hostToRegistry = ConfigUtils.getSystemProperty(DUBBO_IP_TO_REGISTRY);
         if (StringUtils.isEmpty(hostToRegistry)) {
             hostToRegistry = NetUtils.getLocalHost();
@@ -326,10 +342,14 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         }
         map.put(REGISTER_IP_KEY, hostToRegistry);
 
+        //创建代理
         ref = createProxy(map);
 
+        //根据接口名，group，version构造服务键,group/path:version
         String serviceKey = URL.buildKey(interfaceName, group, version);
+        //初始化消费模型
         ApplicationModel.initConsumerModel(serviceKey, buildConsumerModel(serviceKey, attributes));
+        //表示已经初始化
         initialized = true;
     }
 
@@ -374,7 +394,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 }
             } else { // assemble URL from register center's configuration
                 // if protocols not injvm checkRegistry
-                if (!LOCAL_PROTOCOL.equalsIgnoreCase(getProtocol())){
+                if (!LOCAL_PROTOCOL.equalsIgnoreCase(getProtocol())) {
                     checkRegistry();
                     List<URL> us = loadRegistries(false);
                     if (CollectionUtils.isNotEmpty(us)) {
@@ -629,9 +649,12 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     }
 
     private void resolveFile() {
+        //// 直连提供者，参见文档《直连提供者》http://dubbo.apache.org/zh-cn/docs/user/demos/explicit-target.html
+        // 【直连提供者】第一优先级，通过 -D 参数指定 ，例如 java -Dcom.alibaba.xxx.XxxService=dubbo://localhost:20890
         String resolve = System.getProperty(interfaceName);
         String resolveFile = null;
         if (StringUtils.isEmpty(resolve)) {
+            // 默认先加载，`${user.home}/dubbo-resolve.properties` 文件 ，无需配置
             resolveFile = System.getProperty("dubbo.resolve.file");
             if (StringUtils.isEmpty(resolveFile)) {
                 File userResolveFile = new File(new File(System.getProperty("user.home")), "dubbo-resolve.properties");
@@ -639,6 +662,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                     resolveFile = userResolveFile.getAbsolutePath();
                 }
             }
+            // 存在 resolveFile ，则进行文件读取加载。
             if (resolveFile != null && resolveFile.length() > 0) {
                 Properties properties = new Properties();
                 try (FileInputStream fis = new FileInputStream(new File(resolveFile))) {
@@ -650,6 +674,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 resolve = properties.getProperty(interfaceName);
             }
         }
+        // 设置直连提供者的 url
         if (resolve != null && resolve.length() > 0) {
             url = resolve;
             if (logger.isWarnEnabled()) {

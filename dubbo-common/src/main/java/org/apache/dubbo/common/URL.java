@@ -1306,6 +1306,13 @@ class URL implements Serializable {
         return buildKey(inf, getParameter(GROUP_KEY), getParameter(VERSION_KEY));
     }
 
+    /**
+     * group/path:version
+     * @param path
+     * @param group
+     * @param version
+     * @return
+     */
     public static String buildKey(String path, String group, String version) {
         StringBuilder buf = new StringBuilder();
         if (group != null && group.length() > 0) {

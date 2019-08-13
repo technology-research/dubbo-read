@@ -20,7 +20,8 @@ import org.apache.dubbo.common.utils.StringUtils;
 
 /**
  * The service consumer default configuration
- *
+ * 消费者配置
+ * http://dubbo.apache.org/zh-cn/docs/user/references/xml/dubbo-consumer.html
  * @export
  */
 public class ConsumerConfig extends AbstractReferenceConfig {

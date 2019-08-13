@@ -144,6 +144,7 @@ public abstract class AbstractConfig implements Serializable {
         return StringUtils.camelToSplitName(tag, "-");
     }
 
+
     protected static void appendParameters(Map<String, String> parameters, Object config) {
         //附加变量
         appendParameters(parameters, config, null);
