@@ -104,12 +104,13 @@ public abstract class AnnotatedBeanDefinitionRegistryUtils {
             }
         }
 
+        // 创建 AnnotatedBeanDefinitionReader 对象
         AnnotatedBeanDefinitionReader reader = new AnnotatedBeanDefinitionReader(registry);
 
         if (logger.isDebugEnabled()) {
             logger.debug(registry.getClass().getSimpleName() + " will register annotated classes : " + asList(annotatedClasses) + " .");
         }
-
+        //注册
         reader.register(annotatedClasses);
 
     }

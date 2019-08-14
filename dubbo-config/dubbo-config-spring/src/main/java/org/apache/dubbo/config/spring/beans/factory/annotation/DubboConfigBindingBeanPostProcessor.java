@@ -67,8 +67,14 @@ public class DubboConfigBindingBeanPostProcessor implements BeanPostProcessor, A
 
     private ApplicationContext applicationContext;
 
+    /**
+     * 是否忽略位置属性
+     */
     private boolean ignoreUnknownFields = true;
 
+    /**
+     * 是否忽略类型不对的属性
+     */
     private boolean ignoreInvalidFields = true;
 
     private List<DubboConfigBeanCustomizer> configBeanCustomizers = Collections.emptyList();
@@ -101,7 +107,7 @@ public class DubboConfigBindingBeanPostProcessor implements BeanPostProcessor, A
 
     }
 
-    private void bind(String prefix, AbstractConfig dubboConfig) {
+    private void  bind(String prefix, AbstractConfig dubboConfig) {
 
         dubboConfigBinder.bind(prefix, dubboConfig);
 
@@ -155,7 +161,7 @@ public class DubboConfigBindingBeanPostProcessor implements BeanPostProcessor, A
 
     @Override
     public void afterPropertiesSet() throws Exception {
-
+        //初始化Dubbo配置构造器，设置ignoreUnknownFields、ignoreInvalidFields 属性
         initDubboConfigBinder();
 
         initConfigBeanCustomizers();
@@ -181,6 +187,9 @@ public class DubboConfigBindingBeanPostProcessor implements BeanPostProcessor, A
 
     }
 
+    /**
+     * 初始化配置Bean自定义属性
+     */
     private void initConfigBeanCustomizers() {
 
         Collection<DubboConfigBeanCustomizer> configBeanCustomizers =

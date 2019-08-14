@@ -27,7 +27,7 @@ import java.lang.annotation.Target;
 
 /**
  * Multiple {@link EnableDubboConfigBinding} {@link Annotation}
- *
+ * 表明使用 DubboConfigBindingsRegistrar 类进行导入
  * @since 2.5.8
  * @see EnableDubboConfigBinding
  */

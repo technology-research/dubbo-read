@@ -51,7 +51,7 @@ import static org.springframework.beans.factory.support.BeanDefinitionReaderUtil
 
 /**
  * {@link AbstractConfig Dubbo Config} binding Bean registrar
- *
+ * 处理@EnableDubboConfigBinding注解，
  * @see EnableDubboConfigBinding
  * @see DubboConfigBindingBeanPostProcessor
  * @since 2.5.8
@@ -72,6 +72,11 @@ public class DubboConfigBindingRegistrar implements ImportBeanDefinitionRegistra
 
     }
 
+    /**
+     * 获取@EnableDubboConfigBinding中的值，注入spring容器
+     * @param attributes
+     * @param registry
+     */
     protected void registerBeanDefinitions(AnnotationAttributes attributes, BeanDefinitionRegistry registry) {
 
         String prefix = environment.resolvePlaceholders(attributes.getString("prefix"));
@@ -88,7 +93,7 @@ public class DubboConfigBindingRegistrar implements ImportBeanDefinitionRegistra
                                           Class<? extends AbstractConfig> configClass,
                                           boolean multiple,
                                           BeanDefinitionRegistry registry) {
-
+        // 获得 prefix 开头的配置属性
         Map<String, Object> properties = getSubProperties(environment.getPropertySources(), prefix);
 
         if (CollectionUtils.isEmpty(properties)) {
@@ -98,14 +103,14 @@ public class DubboConfigBindingRegistrar implements ImportBeanDefinitionRegistra
             }
             return;
         }
-
+        //根据multiple配置得到对应的Bean名称的集合
         Set<String> beanNames = multiple ? resolveMultipleBeanNames(properties) :
                 Collections.singleton(resolveSingleBeanName(properties, configClass, registry));
 
         for (String beanName : beanNames) {
-
+            //注册Dubbo Config Bean对象
             registerDubboConfigBean(beanName, configClass, registry);
-
+            //注册 Dubbo Config 对象对应的bean的后置处理器
             registerDubboConfigBindingBeanPostProcessor(prefix, beanName, multiple, registry);
 
         }
@@ -130,21 +135,28 @@ public class DubboConfigBindingRegistrar implements ImportBeanDefinitionRegistra
 
     }
 
+    /**
+     * 注册绑定Bean的后置处理器
+     * @param prefix
+     * @param beanName
+     * @param multiple
+     * @param registry
+     */
     private void registerDubboConfigBindingBeanPostProcessor(String prefix, String beanName, boolean multiple,
                                                              BeanDefinitionRegistry registry) {
-
+        // 创建 BeanDefinitionBuilder 对象
         Class<?> processorClass = DubboConfigBindingBeanPostProcessor.class;
 
         BeanDefinitionBuilder builder = rootBeanDefinition(processorClass);
-
+        //添加构造方法的参数为 actualPrefix 和 beanName。即，创建DubboConfigBindingBeanPostProcessor对象，需要这两个构造参数
         String actualPrefix = multiple ? normalizePrefix(prefix) + beanName : prefix;
 
         builder.addConstructorArgValue(actualPrefix).addConstructorArgValue(beanName);
-
+        //获取 AbstractBeanDefinition 对象
         AbstractBeanDefinition beanDefinition = builder.getBeanDefinition();
-
+        //设置role属性
         beanDefinition.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
-
+        //注册到registry并且生成名称
         registerWithGeneratedName(beanDefinition, registry);
 
         if (log.isInfoEnabled()) {
@@ -188,6 +200,13 @@ public class DubboConfigBindingRegistrar implements ImportBeanDefinitionRegistra
 
     }
 
+    /**
+     * 解析单例Bean
+     * @param properties
+     * @param configClass
+     * @param registry
+     * @return
+     */
     private String resolveSingleBeanName(Map<String, Object> properties, Class<? extends AbstractConfig> configClass,
                                          BeanDefinitionRegistry registry) {
 

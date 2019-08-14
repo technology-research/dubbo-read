@@ -56,7 +56,7 @@ import java.lang.annotation.Target;
  * <li>{@link ProviderConfig} binding to property :  "dubbo.providers"</li>
  * <li>{@link ConsumerConfig} binding to property :  "dubbo.consumers"</li>
  * </ul>
- *
+ * @Import(DubboConfigConfigurationRegistrar.class)，表明使用 DubboConfigConfigurationRegistrar 类进行导入
  * @see EnableDubboConfigBinding
  * @see DubboConfigConfiguration
  * @see DubboConfigConfigurationRegistrar
@@ -71,7 +71,7 @@ public @interface EnableDubboConfig {
 
     /**
      * It indicates whether binding to multiple Spring Beans.
-     *
+     * 配置是否绑定到多个 Spring Bean 上
      * @return the default value is <code>false</code>
      * @revised 2.5.9
      */
