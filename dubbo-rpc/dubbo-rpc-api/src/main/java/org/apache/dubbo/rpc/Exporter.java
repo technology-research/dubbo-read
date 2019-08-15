@@ -33,6 +33,7 @@ public interface Exporter<T> {
     Invoker<T> getInvoker();
 
     /**
+     * 取消暴露
      * unexport.
      * <p>
      * <code>

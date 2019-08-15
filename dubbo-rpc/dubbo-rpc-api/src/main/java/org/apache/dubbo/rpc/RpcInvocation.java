@@ -49,11 +49,16 @@ public class RpcInvocation implements Invocation, Serializable {
     private Object[] arguments;
 
     private Map<String, String> attachments;
-
+    /**
+     * invoker，不进行持久化
+     */
     private transient Invoker<?> invoker;
 
     private transient Class<?> returnType;
 
+    /**
+     * 调用类型
+     */
     private transient InvokeMode invokeMode;
 
     public RpcInvocation() {

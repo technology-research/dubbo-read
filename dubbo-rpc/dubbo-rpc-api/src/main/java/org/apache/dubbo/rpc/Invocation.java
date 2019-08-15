@@ -20,7 +20,7 @@ import java.util.Map;
 
 /**
  * Invocation. (API, Prototype, NonThreadSafe)
- *
+ * 会话域
  * @serial Don't change the class name and package name.
  * @see org.apache.dubbo.rpc.Invoker#invoke(Invocation)
  * @see org.apache.dubbo.rpc.RpcInvocation
@@ -53,7 +53,7 @@ public interface Invocation {
 
     /**
      * get attachments.
-     *
+     * 获得隐式参数相关
      * @return attachments.
      * @serial
      */

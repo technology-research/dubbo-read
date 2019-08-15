@@ -28,7 +28,7 @@ import java.util.function.BiConsumer;
  * (API, Prototype, NonThreadSafe)
  *
  * An RPC {@link Result}.
- *
+ * Result 是会话域，它持有调用过程中返回值，异常等。
  * Known implementations are:
  * 1. {@link AsyncRpcResult}, it's a {@link CompletionStage} whose underlying value signifies the return value of an RPC call.
  * 2. {@link AppResponse}, it inevitably inherits {@link CompletionStage} and {@link Future}, but you should never treat AppResponse as a type of Future,
