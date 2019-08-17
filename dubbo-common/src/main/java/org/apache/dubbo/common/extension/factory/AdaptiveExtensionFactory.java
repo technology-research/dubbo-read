@@ -30,19 +30,26 @@ import java.util.List;
 @Adaptive
 public class AdaptiveExtensionFactory implements ExtensionFactory {
 
+    /**
+     * ExtensionFactory 拓展对象集合
+     */
     private final List<ExtensionFactory> factories;
 
     public AdaptiveExtensionFactory() {
+        // 使用 ExtensionLoader 加载拓展对象实现类。
         ExtensionLoader<ExtensionFactory> loader = ExtensionLoader.getExtensionLoader(ExtensionFactory.class);
         List<ExtensionFactory> list = new ArrayList<ExtensionFactory>();
         for (String name : loader.getSupportedExtensions()) {
+            //添加到list中
             list.add(loader.getExtension(name));
         }
+        //将factories设置为list不可修改集合
         factories = Collections.unmodifiableList(list);
     }
 
     @Override
     public <T> T getExtension(Class<T> type, String name) {
+        // 遍历工厂数组，直到获得到属性
         for (ExtensionFactory factory : factories) {
             T extension = factory.getExtension(type, name);
             if (extension != null) {
