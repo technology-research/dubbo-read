@@ -104,6 +104,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     private static final long serialVersionUID = 3033787999037024738L;
 
     /**
+     * 自适应Protocol实现对象
      * The {@link Protocol} implementation with adaptive functionality,it will be different in different scenarios.
      * A particular {@link Protocol} implementation is determined by the protocol attribute in the {@link URL}.
      * For example:
@@ -120,6 +121,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     private static final Protocol protocol = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
 
     /**
+     * 自适应ProxyFactory实现对象
      * A {@link ProxyFactory} implementation that will generate a exported service proxy,the JavassistProxyFactory is its
      * default implementation
      */
@@ -141,7 +143,13 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     private final List<URL> urls = new ArrayList<URL>();
 
     /**
-     * The exported services
+     * 服务配置暴露的 Exporter集合 。
+     * URL ：Exporter 不一定是 1：1 的关系。
+     * 例如 {@link #scope} 未设置时，会暴露 Local + Remote 两个，也就是 URL ：Exporter = 1：2
+     *      {@link #scope} 设置为空时，不会暴露，也就是 URL ：Exporter = 1：0
+     *      {@link #scope} 设置为 Local 或 Remote 任一时，会暴露 Local 或 Remote 一个，也就是 URL ：Exporter = 1：1
+     *
+     * 非配置。
      */
     private final List<Exporter<?>> exporters = new ArrayList<Exporter<?>>();
 
@@ -151,11 +159,14 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     private String interfaceName;
 
     /**
+     * 对应Service接口类
+     * 非配置
      * The interface class of the exported service
      */
     private Class<?> interfaceClass;
 
     /**
+     * Service对象
      * The reference of the interface implementation
      */
     private T ref;
@@ -472,13 +483,19 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
         }
     }
 
+    /**
+     * 取消暴露
+     */
     public synchronized void unexport() {
+        //如果服务没有暴露直接返回
         if (!exported) {
             return;
         }
+        //如果已经取消过了
         if (unexported) {
             return;
         }
+        //如果暴露服务集合不为空
         if (!exporters.isEmpty()) {
             for (Exporter<?> exporter : exporters) {
                 try {
@@ -710,14 +727,19 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     /**
+     * 本地暴露，基于jvm
      * always export injvm
      */
     private void exportLocal(URL url) {
+        //构造本地Dubbo URL
         URL local = URLBuilder.from(url)
                 .setProtocol(LOCAL_PROTOCOL)
+                //设置本地地址 localhost
                 .setHost(LOCALHOST_VALUE)
                 .setPort(0)
                 .build();
+        // 使用 ProxyFactory 创建 Invoker 对象
+        // 使用 Protocol 暴露 Invoker 对象
         Exporter<?> exporter = protocol.export(
                 PROXY_FACTORY.getInvoker(ref, (Class) interfaceClass, local));
         exporters.add(exporter);

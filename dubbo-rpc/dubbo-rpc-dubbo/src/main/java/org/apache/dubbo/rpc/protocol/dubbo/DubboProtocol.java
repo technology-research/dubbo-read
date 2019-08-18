@@ -97,6 +97,8 @@ public class DubboProtocol extends AbstractProtocol {
     private static DubboProtocol INSTANCE;
 
     /**
+     * 通信服务器集合
+     * key 服务器地址
      * <host:port,Exchanger>
      */
     private final Map<String, ExchangeServer> serverMap = new ConcurrentHashMap<>();
@@ -302,8 +304,9 @@ public class DubboProtocol extends AbstractProtocol {
                 stubServiceMethodsMap.put(url.getServiceKey(), stubServiceMethods);
             }
         }
-
+        //开启服务器
         openServer(url);
+        //初始化序列化优化器
         optimizeSerialization(url);
 
         return exporter;

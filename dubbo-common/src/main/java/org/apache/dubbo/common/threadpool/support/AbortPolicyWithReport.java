@@ -66,6 +66,7 @@ public class AbortPolicyWithReport extends ThreadPoolExecutor.AbortPolicy {
 
     @Override
     public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
+        //打印告警日志
         String msg = String.format("Thread pool is EXHAUSTED!" +
                 " Thread Name: %s, Pool Size: %d (active: %d, core: %d, max: %d, largest: %d), Task: %d (completed: "
                 + "%d)," +
@@ -75,28 +76,36 @@ public class AbortPolicyWithReport extends ThreadPoolExecutor.AbortPolicy {
             e.getTaskCount(), e.getCompletedTaskCount(), e.isShutdown(), e.isTerminated(), e.isTerminating(),
             url.getProtocol(), url.getIp(), url.getPort());
         logger.warn(msg);
+        //打印JStack，分析线程状态
         dumpJStack();
         throw new RejectedExecutionException(msg);
     }
 
+    /**
+     * 打印dump的Jstack
+     */
     private void dumpJStack() {
         long now = System.currentTimeMillis();
 
         //dump every 10 minutes
+        //每10分钟打印一次
         if (now - lastPrintTime < TEN_MINUTES_MILLS) {
             return;
         }
 
+        //获得信号量
         if (!guard.tryAcquire()) {
             return;
         }
-
+        // 创建线程池，后台执行打印 JStack
         ExecutorService pool = Executors.newSingleThreadExecutor();
         pool.execute(() -> {
+
+            // 获得路径
             String dumpPath = url.getParameter(DUMP_DIRECTORY, System.getProperty("user.home"));
 
             SimpleDateFormat sdf;
-
+            // 获得系统
             String os = System.getProperty(OS_NAME_KEY).toLowerCase();
 
             // window system don't support ":" in file name
@@ -107,15 +116,18 @@ public class AbortPolicyWithReport extends ThreadPoolExecutor.AbortPolicy {
             }
 
             String dateStr = sdf.format(new Date());
-            //try-with-resources
+            //try-with-resources // 获得输出流
             try (FileOutputStream jStackStream = new FileOutputStream(
                 new File(dumpPath, "Dubbo_JStack.log" + "." + dateStr))) {
+                //打印JStack
                 JVMUtil.jstack(jStackStream);
             } catch (Throwable t) {
                 logger.error("dump jStack error", t);
             } finally {
+                // 释放信号量
                 guard.release();
             }
+            // 记录最后打印时间
             lastPrintTime = System.currentTimeMillis();
         });
         //must shutdown thread pool ,if not will lead to OOM

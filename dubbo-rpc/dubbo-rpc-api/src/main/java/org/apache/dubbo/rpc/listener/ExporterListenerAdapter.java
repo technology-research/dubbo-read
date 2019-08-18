@@ -22,6 +22,7 @@ import org.apache.dubbo.rpc.RpcException;
 
 /**
  * ExporterListenerAdapter
+ * 实现 ExporterListener 接口，ExporterListener 适配器抽象类
  */
 public abstract class ExporterListenerAdapter implements ExporterListener {
 

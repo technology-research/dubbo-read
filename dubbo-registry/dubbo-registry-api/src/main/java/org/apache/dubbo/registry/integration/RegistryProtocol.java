@@ -120,19 +120,30 @@ public class RegistryProtocol implements Protocol {
     };
 
     private final static Logger logger = LoggerFactory.getLogger(RegistryProtocol.class);
+    //单例。 在Dubbo SPI中，被初始化，有且只有一次
     private static RegistryProtocol INSTANCE;
+
     private final Map<URL, NotifyListener> overrideListeners = new ConcurrentHashMap<>();
     private final Map<String, ServiceConfigurationListener> serviceConfigurationListeners = new ConcurrentHashMap<>();
     private final ProviderConfigurationListener providerConfigurationListener = new ProviderConfigurationListener();
     //To solve the problem of RMI repeated exposure port conflicts, the services that have been exposed are no longer exposed.
     //providerurl <--> exporter
+    /**
+     * 绑定关系集合
+     * key:服务 Dubbo URL
+     * 用于解决rmi重复暴露端口冲突的问题，已经暴露过的服务不再重写暴露
+     */
     private final ConcurrentMap<String, ExporterChangeableWrapper<?>> bounds = new ConcurrentHashMap<>();
+
     private Cluster cluster;
+    //自适应拓展实现类，通过Dubbo SPI 自动注入
     private Protocol protocol;
+    //RegistryFactory 自适应拓展实现类，通过 Dubbo SPI 自动注入。
     private RegistryFactory registryFactory;
     private ProxyFactory proxyFactory;
 
     public RegistryProtocol() {
+        //初始化
         INSTANCE = this;
     }
 
@@ -192,14 +203,17 @@ public class RegistryProtocol implements Protocol {
 
     @Override
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
+        //得到注册中心URL
         URL registryUrl = getRegistryUrl(originInvoker);
         // url to export locally
+        //得到提供者URL
         URL providerUrl = getProviderUrl(originInvoker);
 
         // Subscribe the override data
         // FIXME When the provider subscribes, it will affect the scene : a certain JVM exposes the service and call
         //  the same service. Because the subscribed is cached key with the name of the service, it causes the
         //  subscription information to cover.
+
         final URL overrideSubscribeUrl = getSubscribedOverrideUrl(providerUrl);
         final OverrideListener overrideSubscribeListener = new OverrideListener(overrideSubscribeUrl, originInvoker);
         overrideListeners.put(overrideSubscribeUrl, overrideSubscribeListener);
@@ -236,8 +250,18 @@ public class RegistryProtocol implements Protocol {
         return serviceConfigurationListener.overrideUrl(providerUrl);
     }
 
+    /**
+     *暴露服务。
+     *
+     * 此处的 Local 指的是，本地启动服务，但是不包括向注册中心注册服务的意思
+     * @param originInvoker 原始invoker
+     * @param providerUrl 提供者URL
+     * @param <T>
+     * @return
+     */
     @SuppressWarnings("unchecked")
     private <T> ExporterChangeableWrapper<T> doLocalExport(final Invoker<T> originInvoker, URL providerUrl) {
+        //获得bounds中的缓存key
         String key = getCacheKey(originInvoker);
 
         return (ExporterChangeableWrapper<T>) bounds.computeIfAbsent(key, s -> {

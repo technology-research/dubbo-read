@@ -36,6 +36,8 @@ import static org.apache.dubbo.rpc.Constants.EXPORTER_LISTENER_KEY;
 
 /**
  * ListenerProtocol
+ * 实现 Protocol 接口，Protocol 的 Wrapper 拓展实现类，用于给 Exporter 增加 ExporterListener ，
+ * 监听 Exporter 暴露完成和取消暴露完成。
  */
 public class ProtocolListenerWrapper implements Protocol {
 
@@ -53,11 +55,20 @@ public class ProtocolListenerWrapper implements Protocol {
         return protocol.getDefaultPort();
     }
 
+    /**
+     * 暴露服务
+     * @param invoker 服务的执行体
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     @Override
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
+        //注册中心判断
         if (REGISTRY_PROTOCOL.equals(invoker.getUrl().getProtocol())) {
             return protocol.export(invoker);
         }
+        //暴露服务，创建Exporter对象，获得ExoporterListener对象。创建带ExporterLister的Exporter对象
         return new ListenerExporterWrapper<T>(protocol.export(invoker),
                 Collections.unmodifiableList(ExtensionLoader.getExtensionLoader(ExporterListener.class)
                         .getActivateExtension(invoker.getUrl(), EXPORTER_LISTENER_KEY)));

@@ -49,11 +49,21 @@ public class ProtocolFilterWrapper implements Protocol {
     }
 
 
-
+    /**
+     * 构建调用者链
+     * @param invoker 服务调用者
+     * @param key 获取URL参数名
+     * @param group 分驻
+     * @param <T> 服务接口
+     * @return Invoker
+     */
     private static <T> Invoker<T> buildInvokerChain(final Invoker<T> invoker, String key, String group) {
         Invoker<T> last = invoker;
+        //获得符合自动激活条件的拓展对象数组
         List<Filter> filters = ExtensionLoader.getExtensionLoader(Filter.class).getActivateExtension(invoker.getUrl(), key, group);
 
+        //倒叙循环Filter，创建带Filter链的Invoker对象
+        //因为是通过嵌套声明匿名类循环调用的方式，所以要倒序
         if (!filters.isEmpty()) {
             for (int i = filters.size() - 1; i >= 0; i--) {
                 final Filter filter = filters.get(i);
@@ -114,11 +124,20 @@ public class ProtocolFilterWrapper implements Protocol {
         return protocol.getDefaultPort();
     }
 
+    /**
+     * 暴露服务
+     * @param invoker 服务的执行体
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     @Override
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
+        //注册中心，针对远程暴露服务
         if (REGISTRY_PROTOCOL.equals(invoker.getUrl().getProtocol())) {
             return protocol.export(invoker);
         }
+        // 建立带有 Filter 过滤链的 Invoker ，再暴露服务。
         return protocol.export(buildInvokerChain(invoker, SERVICE_FILTER_KEY, CommonConstants.PROVIDER));
     }
 

@@ -299,8 +299,8 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
 
     /**
      * Load the registry and conversion it to {@link URL}, the priority order is: system property > dubbo registry config
-     *
-     * @param provider whether it is the provider side
+     * 加载注册中心 本地暴露无需向注册中心注册
+     * @param provider whether it is the provider side  是否服务提供者
      * @return
      */
     protected List<URL> loadRegistries(boolean provider) {

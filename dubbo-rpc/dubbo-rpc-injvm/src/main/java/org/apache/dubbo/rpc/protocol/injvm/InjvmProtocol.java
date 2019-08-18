@@ -37,12 +37,21 @@ import static org.apache.dubbo.rpc.Constants.LOCAL_PROTOCOL;
 
 /**
  * InjvmProtocol
+ * 基于jvm的协议 本地服务暴露
  */
 public class InjvmProtocol extends AbstractProtocol implements Protocol {
 
+    /**
+     * 协议名 injvm
+      */
     public static final String NAME = LOCAL_PROTOCOL;
-
+    /**
+     * 默认端口  9
+     */
     public static final int DEFAULT_PORT = 0;
+    /**
+     * 单例模式所需。懒汉式 通过Dubbo SPi 加载创建，有且仅有一次
+     */
     private static InjvmProtocol INSTANCE;
 
     public InjvmProtocol() {
@@ -50,6 +59,7 @@ public class InjvmProtocol extends AbstractProtocol implements Protocol {
     }
 
     public static InjvmProtocol getInjvmProtocol() {
+        //如果InjvmProtocol实例为null，则中拓展加载器中获取
         if (INSTANCE == null) {
             ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(InjvmProtocol.NAME); // load
         }
@@ -89,6 +99,7 @@ public class InjvmProtocol extends AbstractProtocol implements Protocol {
 
     @Override
     public <T> Exporter<T> export(Invoker<T> invoker) throws RpcException {
+        //创建InjvmExporter
         return new InjvmExporter<T>(invoker, invoker.getUrl().getServiceKey(), exporterMap);
     }
 
