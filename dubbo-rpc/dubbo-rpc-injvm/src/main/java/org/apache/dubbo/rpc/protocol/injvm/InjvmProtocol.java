@@ -66,6 +66,13 @@ public class InjvmProtocol extends AbstractProtocol implements Protocol {
         return INSTANCE;
     }
 
+    /**
+     * 得到本地exporter
+     *  当本地已经有该 Exporter 时，本地引用
+     * @param map
+     * @param key
+     * @return
+     */
     static Exporter<?> getExporter(Map<String, Exporter<?>> map, URL key) {
         Exporter<?> result = null;
 
@@ -108,7 +115,13 @@ public class InjvmProtocol extends AbstractProtocol implements Protocol {
         return new InjvmInvoker<T>(serviceType, url, url.getServiceKey(), exporterMap);
     }
 
+    /**
+     * 是否本地引用
+     * @param url url地址
+     * @return 是否
+     */
     public boolean isInjvmRefer(URL url) {
+        //得到scope配置
         String scope = url.getParameter(SCOPE_KEY);
         // Since injvm protocol is configured explicitly, we don't need to set any extra flag, use normal refer process.
         if (SCOPE_LOCAL.equals(scope) || (url.getParameter(LOCAL_PROTOCOL, false))) {
@@ -121,6 +134,7 @@ public class InjvmProtocol extends AbstractProtocol implements Protocol {
         } else if (url.getParameter(GENERIC_KEY, false)) {
             // generic invocation is not local reference
             return false;
+            // 当本地已经有该 Exporter 时，本地引用，本地已有的服务，不必要使用远程服务，减少网络开销，提升性能。
         } else if (getExporter(exporterMap, url) != null) {
             // by default, go through local reference if there's the service exposed locally
             return true;

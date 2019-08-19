@@ -66,6 +66,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     private static final long serialVersionUID = -5864351140409987595L;
 
     /**
+     * 自适应Protocol 实现对象
      * The {@link Protocol} implementation with adaptive functionality,it will be different in different scenarios.
      * A particular {@link Protocol} implementation is determined by the protocol attribute in the {@link URL}.
      * For example:
@@ -82,12 +83,14 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     private static final Protocol REF_PROTOCOL = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
 
     /**
+     * 自适应Cluster实现对象
      * The {@link Cluster}'s implementation with adaptive functionality, and actually it will get a {@link Cluster}'s
      * specific implementation who is wrapped with <b>MockClusterInvoker</b>
      */
     private static final Cluster CLUSTER = ExtensionLoader.getExtensionLoader(Cluster.class).getAdaptiveExtension();
 
     /**
+     * 自适应ProxyFactory实现对象
      * A {@link ProxyFactory} implementation that will generate a reference service's proxy,the JavassistProxyFactory is
      * its default implementation
      */
@@ -114,6 +117,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     private String client;
 
     /**
+     * 直连服务提供者地址
      * The url for peer-to-peer invocation
      */
     private String url;
@@ -367,15 +371,25 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         return new ConsumerModel(serviceKey, serviceInterface, ref, methods, attributes);
     }
 
+    /**
+     * 创建代理
+     * @param map url参数集合，包含服务引用配置对象的配置项
+     * @return
+     */
     @SuppressWarnings({"unchecked", "rawtypes", "deprecation"})
     private T createProxy(Map<String, String> map) {
+        //是否为jvm引用
         if (shouldJvmRefer(map)) {
+            //构建本地URL
             URL url = new URL(LOCAL_PROTOCOL, LOCALHOST_VALUE, 0, interfaceClass.getName()).addParameters(map);
+            //引用服务，返回Invoker对象
             invoker = REF_PROTOCOL.refer(interfaceClass, url);
             if (logger.isInfoEnabled()) {
                 logger.info("Using injvm service " + interfaceClass.getName());
             }
+            //远程引用
         } else {
+            //清空url地址，
             urls.clear(); // reference retry init will add url to urls, lead to OOM
             if (url != null && url.length() > 0) { // user specified URL, could be peer-to-peer address, or register center's address.
                 String[] us = SEMICOLON_SPLIT_PATTERN.split(url);
@@ -433,7 +447,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 }
             }
         }
-
+        //启动时检查
         if (shouldCheck() && !invoker.isAvailable()) {
             throw new IllegalStateException("Failed to check the status of the service " + interfaceName + ". No provider available for the service " + (group == null ? "" : group + "/") + interfaceName + (version == null ? "" : ":" + version) + " from the url " + invoker.getUrl() + " to the consumer " + NetUtils.getLocalHost() + " use dubbo version " + Version.getVersion());
         }
@@ -454,6 +468,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     }
 
     /**
+     * 判断是否为本地引用
      * Figure out should refer the service in the same JVM from configurations. The default behavior is true
      * 1. if injvm is specified, then use it
      * 2. then if a url is specified, then assume it's a remote call
@@ -463,12 +478,17 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
      */
     protected boolean shouldJvmRefer(Map<String, String> map) {
         URL tmpUrl = new URL("temp", "localhost", 0, map);
+        //是否本地引用
         boolean isJvmRefer;
+        //injvm属性为空，不通过该属性判断
         if (isInjvm() == null) {
+            //之恋服务提供者
             // if a url is specified, don't do local reference
             if (url != null && url.length() > 0) {
+
                 isJvmRefer = false;
             } else {
+                //通过`tmpUrl`判断，是否需要本地引用
                 // by default, reference local service if there is
                 isJvmRefer = InjvmProtocol.getInjvmProtocol().isInjvmRefer(tmpUrl);
             }
