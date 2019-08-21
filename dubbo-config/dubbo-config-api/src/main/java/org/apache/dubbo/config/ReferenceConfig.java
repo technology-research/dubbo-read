@@ -391,7 +391,9 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         } else {
             //清空url地址，
             urls.clear(); // reference retry init will add url to urls, lead to OOM
+            //定义直连地址，可以是服务提供者的地址，也可以是注册中心的地址
             if (url != null && url.length() > 0) { // user specified URL, could be peer-to-peer address, or register center's address.
+                //拆分地址成数组，使用";"分割
                 String[] us = SEMICOLON_SPLIT_PATTERN.split(url);
                 if (us != null && us.length > 0) {
                     for (String u : us) {
@@ -399,24 +401,31 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                         if (StringUtils.isEmpty(url.getPath())) {
                             url = url.setPath(interfaceName);
                         }
+                        //注册中心地址，带上服务引用的配置参数
                         if (REGISTRY_PROTOCOL.equals(url.getProtocol())) {
                             urls.add(url.addParameterAndEncoded(REFER_KEY, StringUtils.toQueryString(map)));
-                        } else {
+                        } else {//服务提供者的地址
                             urls.add(ClusterUtils.mergeUrl(url, map));
                         }
                     }
                 }
+                //注册中心
             } else { // assemble URL from register center's configuration
                 // if protocols not injvm checkRegistry
+               //不是injvm协议
                 if (!LOCAL_PROTOCOL.equalsIgnoreCase(getProtocol())) {
+                    //校验注册中心
                     checkRegistry();
+                    //加载注册中心URL数组
                     List<URL> us = loadRegistries(false);
                     if (CollectionUtils.isNotEmpty(us)) {
                         for (URL u : us) {
                             URL monitorUrl = loadMonitor(u);
+                            //服务引用配置对象 map ，嗲上监控中心的URL
                             if (monitorUrl != null) {
                                 map.put(MONITOR_KEY, URL.encode(monitorUrl.toFullString()));
                             }
+                            //注册中心的地址，带上服务引用的配置参数
                             urls.add(u.addParameterAndEncoded(REFER_KEY, StringUtils.toQueryString(map)));
                         }
                     }
@@ -425,8 +434,9 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                     }
                 }
             }
-
+            //单个url
             if (urls.size() == 1) {
+                //引用服务
                 invoker = REF_PROTOCOL.refer(interfaceClass, urls.get(0));
             } else {
                 List<Invoker<?>> invokers = new ArrayList<Invoker<?>>();
@@ -438,6 +448,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                     }
                 }
                 if (registryURL != null) { // registry url is available
+                    // 对有注册中心的 Cluster 只用 AvailableCluster
                     // use RegistryAwareCluster only when register's CLUSTER is available
                     URL u = registryURL.addParameter(CLUSTER_KEY, RegistryAwareCluster.NAME);
                     // The invoker wrap relation would be: RegistryAwareClusterInvoker(StaticDirectory) -> FailoverClusterInvoker(RegistryDirectory, will execute route) -> Invoker
@@ -447,7 +458,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
                 }
             }
         }
-        //启动时检查
+        //启动时检查，并且invoker调用不可用
         if (shouldCheck() && !invoker.isAvailable()) {
             throw new IllegalStateException("Failed to check the status of the service " + interfaceName + ". No provider available for the service " + (group == null ? "" : group + "/") + interfaceName + (version == null ? "" : ":" + version) + " from the url " + invoker.getUrl() + " to the consumer " + NetUtils.getLocalHost() + " use dubbo version " + Version.getVersion());
         }
@@ -480,9 +491,9 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         URL tmpUrl = new URL("temp", "localhost", 0, map);
         //是否本地引用
         boolean isJvmRefer;
-        //injvm属性为空，不通过该属性判断
+        //injvm属性为空，不通过该属性判断，已经废弃因为目前使用scope=local
         if (isInjvm() == null) {
-            //之恋服务提供者
+            //直连服务提供者
             // if a url is specified, don't do local reference
             if (url != null && url.length() > 0) {
 
@@ -499,6 +510,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
     }
 
     protected boolean shouldCheck() {
+        //是否需要检查
         Boolean shouldCheck = isCheck();
         if (shouldCheck == null && getConsumer() != null) {
             shouldCheck = getConsumer().isCheck();

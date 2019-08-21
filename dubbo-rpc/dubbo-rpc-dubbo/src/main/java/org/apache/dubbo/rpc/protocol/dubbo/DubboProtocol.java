@@ -105,6 +105,11 @@ public class DubboProtocol extends AbstractProtocol {
     /**
      * <host:port,Exchanger>
      */
+    /**
+     * 通信客户端集合
+     *
+     * key: 服务器地址。格式为：host:port
+     */
     private final Map<String, List<ReferenceCountExchangeClient>> referenceClientMap = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Object> locks = new ConcurrentHashMap<>();
     private final Set<String> optimizers = new ConcurrentHashSet<>();
@@ -365,6 +370,11 @@ public class DubboProtocol extends AbstractProtocol {
         return server;
     }
 
+    /**
+     * // 初始化序列化优化器
+     * @param url url地址
+     * @throws RpcException
+     */
     private void optimizeSerialization(URL url) throws RpcException {
         String className = url.getParameter(OPTIMIZER_KEY, "");
         if (StringUtils.isEmpty(className) || optimizers.contains(className)) {
@@ -404,8 +414,10 @@ public class DubboProtocol extends AbstractProtocol {
 
     @Override
     public <T> Invoker<T> protocolBindingRefer(Class<T> serviceType, URL url) throws RpcException {
+        // 初始化序列化优化器
         optimizeSerialization(url);
-
+        // 获得远程通信客户端数组
+        // 创建 DubboInvoker 对象
         // create rpc invoker.
         DubboInvoker<T> invoker = new DubboInvoker<T>(serviceType, url, getClients(url), invokers);
         invokers.add(invoker);
@@ -413,14 +425,21 @@ public class DubboProtocol extends AbstractProtocol {
         return invoker;
     }
 
+    /**
+     * 获得连接服务提供者的远程通信客户端数组
+     * @param url
+     * @return
+     */
     private ExchangeClient[] getClients(URL url) {
         // whether to share connection
-
+        // 是否共享连接
         boolean useShareConnect = false;
-
+        //得到连接数
         int connections = url.getParameter(CONNECTIONS_KEY, 0);
+        //共享客户端
         List<ReferenceCountExchangeClient> shareClients = null;
         // if not configured, connection is shared, otherwise, one connection for one service
+        // 未配置时，默认共享
         if (connections == 0) {
             useShareConnect = true;
 
@@ -432,13 +451,13 @@ public class DubboProtocol extends AbstractProtocol {
                     DEFAULT_SHARE_CONNECTIONS) : shareConnectionsStr);
             shareClients = getSharedClient(url, connections);
         }
-
+        // 创建连接服务提供者的 ExchangeClient 对象数组
         ExchangeClient[] clients = new ExchangeClient[connections];
         for (int i = 0; i < clients.length; i++) {
-            if (useShareConnect) {
+            if (useShareConnect) { // 共享
                 clients[i] = shareClients.get(i);
 
-            } else {
+            } else { // 不共享
                 clients[i] = initClient(url);
             }
         }
@@ -453,24 +472,29 @@ public class DubboProtocol extends AbstractProtocol {
      * @param connectNum connectNum must be greater than or equal to 1
      */
     private List<ReferenceCountExchangeClient> getSharedClient(URL url, int connectNum) {
+        // 从集合中，查找 ReferenceCountExchangeClient 对象
         String key = url.getAddress();
         List<ReferenceCountExchangeClient> clients = referenceClientMap.get(key);
 
+        //校验客户端是否可以使用
         if (checkClientCanUse(clients)) {
+            //批量引用
             batchClientRefIncr(clients);
             return clients;
         }
-
+        //根据地址创建对象锁
         locks.putIfAbsent(key, new Object());
         synchronized (locks.get(key)) {
+            //根据address得到通信客户端
             clients = referenceClientMap.get(key);
             // dubbo check
             if (checkClientCanUse(clients)) {
+
                 batchClientRefIncr(clients);
                 return clients;
             }
 
-            // connectNum must be greater than or equal to 1
+            // connectNum must be greater than or equal to 1，获得最大的连接数，默认为1
             connectNum = Math.max(connectNum, 1);
 
             // If the clients is empty, then the first initialization is
@@ -494,6 +518,7 @@ public class DubboProtocol extends AbstractProtocol {
             /**
              * I understand that the purpose of the remove operation here is to avoid the expired url key
              * always occupying this memory space.
+             * 我理解这里删除操作的目的是避免使用过期的url键总是占据这个内存空间。
              */
             locks.remove(key);
 
@@ -575,9 +600,9 @@ public class DubboProtocol extends AbstractProtocol {
      */
     private ExchangeClient initClient(URL url) {
 
-        // client type setting.
+        // client type setting. 得到客户端类型设置，默认为server的参数(默认为netty)
         String str = url.getParameter(CLIENT_KEY, url.getParameter(SERVER_KEY, DEFAULT_REMOTING_CLIENT));
-
+        // 设置编解码器为 Dubbo ，即 DubboCountCodec
         url = url.addParameter(CODEC_KEY, DubboCodec.NAME);
         // enable heartbeat by default
         url = url.addParameterIfAbsent(HEARTBEAT_KEY, String.valueOf(DEFAULT_HEARTBEAT));
@@ -590,10 +615,11 @@ public class DubboProtocol extends AbstractProtocol {
 
         ExchangeClient client;
         try {
+            // 懒连接，创建 LazyConnectExchangeClient 对象
             // connection should be lazy
             if (url.getParameter(LAZY_CONNECT_KEY, false)) {
                 client = new LazyConnectExchangeClient(url, requestHandler);
-
+            // 直接连接，创建 HeaderExchangeClient 对象
             } else {
                 client = Exchangers.connect(url, requestHandler);
             }

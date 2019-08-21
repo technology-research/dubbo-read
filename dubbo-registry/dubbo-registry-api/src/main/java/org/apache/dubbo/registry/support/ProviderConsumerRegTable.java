@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * @date 2017/11/23
+ * 本地注册表
  */
 public class ProviderConsumerRegTable {
     public static ConcurrentHashMap<String, ConcurrentMap<Invoker, ProviderInvokerWrapper>> providerInvokers = new ConcurrentHashMap<>();

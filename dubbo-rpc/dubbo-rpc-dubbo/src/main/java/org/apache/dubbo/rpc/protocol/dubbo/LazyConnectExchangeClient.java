@@ -39,6 +39,7 @@ import static org.apache.dubbo.rpc.protocol.dubbo.Constants.DEFAULT_LAZY_CONNECT
 
 /**
  * dubbo protocol support class.
+ * 延迟链接交换机客户端
  */
 @SuppressWarnings("deprecation")
 final class LazyConnectExchangeClient implements ExchangeClient {
@@ -49,15 +50,25 @@ final class LazyConnectExchangeClient implements ExchangeClient {
     protected static final String REQUEST_WITH_WARNING_KEY = "lazyclient_request_with_warning";
     private final static Logger logger = LoggerFactory.getLogger(LazyConnectExchangeClient.class);
     protected final boolean requestWithWarning;
+    //URL
     private final URL url;
+    //通道处理器
     private final ExchangeHandler requestHandler;
+    //连接锁
     private final Lock connectLock = new ReentrantLock();
     private final int warning_period = 5000;
     /**
+     * lazy connect 如果没有初始化时的连接状态
      * lazy connect, initial state for connection
      */
     private final boolean initialState;
+    /**
+     * 通信客户端
+     */
     private volatile ExchangeClient client;
+    /**
+     * 警告计数器。每超过一定次数，打印告警日志。参见 {@link #warning(Object)}
+     */
     private AtomicLong warningcount = new AtomicLong(0);
 
     public LazyConnectExchangeClient(URL url, ExchangeHandler requestHandler) {

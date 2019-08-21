@@ -138,6 +138,7 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     private static final ScheduledExecutorService DELAY_EXPORT_EXECUTOR = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("DubboServiceDelayExporter", true));
 
     /**
+     * 服务引用URL数组
      * The urls of the services exported
      */
     private final List<URL> urls = new ArrayList<URL>();
