@@ -20,6 +20,11 @@ package org.apache.dubbo.remoting.zookeeper;
  * 2019-02-26
  */
 public interface DataListener {
-
+    /**
+     * 监听数据变更
+     * @param path
+     * @param value
+     * @param eventType
+     */
     void dataChanged(String path, Object value, EventType eventType);
 }
