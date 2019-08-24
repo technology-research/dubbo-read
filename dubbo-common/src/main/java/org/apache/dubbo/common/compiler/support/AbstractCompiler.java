@@ -25,14 +25,16 @@ import java.util.regex.Pattern;
  * Abstract compiler. (SPI, Prototype, ThreadSafe)
  */
 public abstract class AbstractCompiler implements Compiler {
-
+    //正则- 包名
     private static final Pattern PACKAGE_PATTERN = Pattern.compile("package\\s+([$_a-zA-Z][$_a-zA-Z0-9\\.]*);");
-
+    //正则- 类名
     private static final Pattern CLASS_PATTERN = Pattern.compile("class\\s+([$_a-zA-Z][$_a-zA-Z0-9]*)\\s+");
 
     @Override
     public Class<?> compile(String code, ClassLoader classLoader) {
+        //去掉空格
         code = code.trim();
+        //根据code匹配包名
         Matcher matcher = PACKAGE_PATTERN.matcher(code);
         String pkg;
         if (matcher.find()) {
@@ -40,6 +42,7 @@ public abstract class AbstractCompiler implements Compiler {
         } else {
             pkg = "";
         }
+        //获得类名
         matcher = CLASS_PATTERN.matcher(code);
         String cls;
         if (matcher.find()) {
@@ -47,13 +50,17 @@ public abstract class AbstractCompiler implements Compiler {
         } else {
             throw new IllegalArgumentException("No such class name in " + code);
         }
+        //获得完整类名
         String className = pkg != null && pkg.length() > 0 ? pkg + "." + cls : cls;
         try {
+            //记载成功说明已经存在
             return Class.forName(className, true, org.apache.dubbo.common.utils.ClassUtils.getCallerClassLoader(getClass()));
-        } catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException e) {//类不存在，说明可能变编译过，进行编译
+            //代码格式不正确
             if (!code.endsWith("}")) {
                 throw new IllegalStateException("The java code not endsWith \"}\", code: \n" + code + "\n");
             }
+            //编译带啊吗
             try {
                 return doCompile(className, code);
             } catch (RuntimeException t) {
@@ -64,6 +71,13 @@ public abstract class AbstractCompiler implements Compiler {
         }
     }
 
+    /**
+     * 编译代码
+     * @param name 完整类名
+     * @param source 代码源
+     * @return
+     * @throws Throwable
+     */
     protected abstract Class<?> doCompile(String name, String source) throws Throwable;
 
 }

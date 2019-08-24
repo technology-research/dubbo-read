@@ -26,6 +26,9 @@ import org.apache.dubbo.common.extension.ExtensionLoader;
 @Adaptive
 public class AdaptiveCompiler implements Compiler {
 
+    /**
+     * 默认编辑器的拓展名
+     */
     private static volatile String DEFAULT_COMPILER;
 
     public static void setDefaultCompiler(String compiler) {
@@ -35,13 +38,18 @@ public class AdaptiveCompiler implements Compiler {
     @Override
     public Class<?> compile(String code, ClassLoader classLoader) {
         Compiler compiler;
+        //基于拓展加载器得到Compiler的拓展加载起
         ExtensionLoader<Compiler> loader = ExtensionLoader.getExtensionLoader(Compiler.class);
+        //复制引用
         String name = DEFAULT_COMPILER; // copy reference
         if (name != null && name.length() > 0) {
+            //得到编译器
             compiler = loader.getExtension(name);
         } else {
+            //得到默认编译器
             compiler = loader.getDefaultExtension();
         }
+        //编译java字符串带啊吗
         return compiler.compile(code, classLoader);
     }
 

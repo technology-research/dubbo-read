@@ -271,6 +271,7 @@ public class ApplicationConfig extends AbstractConfig {
 
     public void setCompiler(String compiler) {
         this.compiler = compiler;
+        //设置默认编辑器
         AdaptiveCompiler.setDefaultCompiler(compiler);
     }
 
