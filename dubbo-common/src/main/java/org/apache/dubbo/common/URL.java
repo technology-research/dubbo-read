@@ -1291,6 +1291,7 @@ class URL implements Serializable {
         if (inf == null) {
             return null;
         }
+        //构造服务key
         return buildKey(inf, getParameter(GROUP_KEY), getParameter(VERSION_KEY));
     }
 

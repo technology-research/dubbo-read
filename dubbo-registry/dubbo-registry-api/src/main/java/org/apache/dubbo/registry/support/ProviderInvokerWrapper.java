@@ -27,9 +27,13 @@ import org.apache.dubbo.rpc.RpcException;
  */
 public class ProviderInvokerWrapper<T> implements Invoker {
     private Invoker<T> invoker;
+    //原始url
     private URL originUrl;
+    //注册中心url
     private URL registryUrl;
+    //提供者url
     private URL providerUrl;
+    //是否注册
     private volatile boolean isReg;
 
     public ProviderInvokerWrapper(Invoker<T> invoker,URL registryUrl,URL providerUrl) {

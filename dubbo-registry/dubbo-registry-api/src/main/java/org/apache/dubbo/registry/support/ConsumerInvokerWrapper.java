@@ -31,6 +31,7 @@ public class ConsumerInvokerWrapper<T> implements Invoker {
     private URL originUrl;
     private URL registryUrl;
     private URL consumerUrl;
+    //注册中心目录
     private RegistryDirectory registryDirectory;
 
     public ConsumerInvokerWrapper(Invoker<T> invoker, URL registryUrl, URL consumerUrl, RegistryDirectory registryDirectory) {
