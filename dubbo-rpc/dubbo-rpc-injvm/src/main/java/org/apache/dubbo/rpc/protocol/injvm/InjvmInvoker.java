@@ -30,11 +30,17 @@ import static org.apache.dubbo.common.constants.CommonConstants.LOCALHOST_VALUE;
 
 /**
  * InjvmInvoker
+ * 本地服务调用实现
  */
 class InjvmInvoker<T> extends AbstractInvoker<T> {
 
     private final String key;
 
+    /**
+     * Exporter 集合
+     * key 服务键
+     *
+     */
     private final Map<String, Exporter<?>> exporterMap;
 
     InjvmInvoker(Class<T> type, URL url, String key, Map<String, Exporter<?>> exporterMap) {
@@ -55,11 +61,14 @@ class InjvmInvoker<T> extends AbstractInvoker<T> {
 
     @Override
     public Result doInvoke(Invocation invocation) throws Throwable {
+        //获得Exporter对象
         Exporter<?> exporter = InjvmProtocol.getExporter(exporterMap, getUrl());
         if (exporter == null) {
             throw new RpcException("Service [" + key + "] not found.");
         }
+        //设置服务提供者地址为本地
         RpcContext.getContext().setRemoteAddress(LOCALHOST_VALUE, 0);
+        //调用
         return exporter.getInvoker().invoke(invocation);
     }
 }

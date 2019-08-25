@@ -23,13 +23,7 @@ import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.common.utils.ArrayUtils;
 import org.apache.dubbo.common.utils.CollectionUtils;
 import org.apache.dubbo.common.utils.NetUtils;
-import org.apache.dubbo.rpc.AsyncRpcResult;
-import org.apache.dubbo.rpc.Invocation;
-import org.apache.dubbo.rpc.Invoker;
-import org.apache.dubbo.rpc.Result;
-import org.apache.dubbo.rpc.RpcContext;
-import org.apache.dubbo.rpc.RpcException;
-import org.apache.dubbo.rpc.RpcInvocation;
+import org.apache.dubbo.rpc.*;
 import org.apache.dubbo.rpc.support.RpcUtils;
 
 import java.lang.reflect.InvocationTargetException;
@@ -53,6 +47,7 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
 
     private volatile boolean available = true;
 
+    //是否被销毁
     private AtomicBoolean destroyed = new AtomicBoolean(false);
 
     public AbstractInvoker(Class<T> type, URL url) {
@@ -125,6 +120,13 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
         return getInterface() + " -> " + (getUrl() == null ? "" : getUrl().toString());
     }
 
+    /**
+     * 调用
+     *
+     * @param inv
+     * @return
+     * @throws RpcException
+     */
     @Override
     public Result invoke(Invocation inv) throws RpcException {
         // if invoker is destroyed due to address refresh from registry, let's allow the current invoke to proceed
@@ -132,11 +134,15 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
             logger.warn("Invoker for service " + this + " on consumer " + NetUtils.getLocalHost() + " is destroyed, "
                     + ", dubbo version is " + Version.getVersion() + ", this invoker should not be used any longer");
         }
+
         RpcInvocation invocation = (RpcInvocation) inv;
+        //设置invoker属性
         invocation.setInvoker(this);
+        //添加公用的隐式传参，例如 `path` `interface`等等，详见RpcInvocation
         if (CollectionUtils.isNotEmptyMap(attachment)) {
             invocation.addAttachmentsIfAbsent(attachment);
         }
+        //添加自定义的隐式传参
         Map<String, String> contextAttachments = RpcContext.getContext().getAttachments();
         if (CollectionUtils.isNotEmptyMap(contextAttachments)) {
             /**
@@ -147,17 +153,20 @@ public abstract class AbstractInvoker<T> implements Invoker<T> {
              */
             invocation.addAttachments(contextAttachments);
         }
-
+        //设置调用模式为同步 异步或future
         invocation.setInvokeMode(RpcUtils.getInvokeMode(url, invocation));
         RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
 
         try {
+            //调用逻辑，通过dubbo spi机制来调用不同的逻辑
             return doInvoke(invocation);
         } catch (InvocationTargetException e) { // biz exception
             Throwable te = e.getTargetException();
             if (te == null) {
+                //异步结果
                 return AsyncRpcResult.newDefaultAsyncResult(null, e, invocation);
             } else {
+                //包装一次
                 if (te instanceof RpcException) {
                     ((RpcException) te).setCode(RpcException.BIZ_EXCEPTION);
                 }
