@@ -508,13 +508,17 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
      * Legitimacy check of stub, note that: the local will deprecated, and replace with <code>stub</code>
      *
      *  Stub 和 Local
+     *  校验stub和local本地存根方式，可以做服务降级或者服务换成等等
      * @param interfaceClass for provider side, it is the {@link Class} of the service that will be exported; for consumer
      *                       side, it is the {@link Class} of the remote service interface
      */
     void checkStubAndLocal(Class<?> interfaceClass) {
+        //local配置项的校验和stub一样
         if (ConfigUtils.isNotEmpty(local)) {
+            //如果默认local为true或者false生成类为接口名+Local
             Class<?> localClass = ConfigUtils.isDefault(local) ?
                     ReflectUtils.forName(interfaceClass.getName() + "Local") : ReflectUtils.forName(local);
+            //校验local
             verify(interfaceClass, localClass);
         }
         if (ConfigUtils.isNotEmpty(stub)) {
@@ -524,7 +528,13 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         }
     }
 
+    /**
+     * 校验stub和local
+     * @param interfaceClass
+     * @param localClass
+     */
     private void verify(Class<?> interfaceClass, Class<?> localClass) {
+        //接口类是否为localClass的父类
         if (!interfaceClass.isAssignableFrom(localClass)) {
             throw new IllegalStateException("The local implementation class " + localClass.getName() +
                     " not implement interface " + interfaceClass.getName());
@@ -532,6 +542,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
 
         try {
             //Check if the localClass a constructor with parameter who's type is interfaceClass
+            //校验localClass的构造方法的入参是否有interfaceClass
             ReflectUtils.findConstructor(localClass, interfaceClass);
         } catch (NoSuchMethodException e) {
             throw new IllegalStateException("No such constructor \"public " + localClass.getSimpleName() +
