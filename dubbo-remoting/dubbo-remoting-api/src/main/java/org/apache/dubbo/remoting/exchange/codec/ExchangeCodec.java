@@ -65,6 +65,7 @@ public class ExchangeCodec extends TelnetCodec {
 
     @Override
     public void encode(Channel channel, ChannelBuffer buffer, Object msg) throws IOException {
+        //来区分请求和响应
         if (msg instanceof Request) {
             encodeRequest(channel, buffer, (Request) msg);
         } else if (msg instanceof Response) {

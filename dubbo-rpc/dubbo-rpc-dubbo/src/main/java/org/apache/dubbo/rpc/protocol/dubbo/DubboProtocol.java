@@ -22,67 +22,26 @@ import org.apache.dubbo.common.config.ConfigurationUtils;
 import org.apache.dubbo.common.extension.ExtensionLoader;
 import org.apache.dubbo.common.serialize.support.SerializableClassRegistry;
 import org.apache.dubbo.common.serialize.support.SerializationOptimizer;
-import org.apache.dubbo.common.utils.CollectionUtils;
-import org.apache.dubbo.common.utils.ConcurrentHashSet;
-import org.apache.dubbo.common.utils.ConfigUtils;
-import org.apache.dubbo.common.utils.NetUtils;
-import org.apache.dubbo.common.utils.StringUtils;
+import org.apache.dubbo.common.utils.*;
 import org.apache.dubbo.remoting.Channel;
 import org.apache.dubbo.remoting.RemotingException;
 import org.apache.dubbo.remoting.Transporter;
-import org.apache.dubbo.remoting.exchange.ExchangeChannel;
-import org.apache.dubbo.remoting.exchange.ExchangeClient;
-import org.apache.dubbo.remoting.exchange.ExchangeHandler;
-import org.apache.dubbo.remoting.exchange.ExchangeServer;
-import org.apache.dubbo.remoting.exchange.Exchangers;
+import org.apache.dubbo.remoting.exchange.*;
 import org.apache.dubbo.remoting.exchange.support.ExchangeHandlerAdapter;
-import org.apache.dubbo.rpc.Exporter;
-import org.apache.dubbo.rpc.Invocation;
-import org.apache.dubbo.rpc.Invoker;
-import org.apache.dubbo.rpc.Protocol;
-import org.apache.dubbo.rpc.Result;
-import org.apache.dubbo.rpc.RpcContext;
-import org.apache.dubbo.rpc.RpcException;
-import org.apache.dubbo.rpc.RpcInvocation;
+import org.apache.dubbo.rpc.*;
 import org.apache.dubbo.rpc.protocol.AbstractProtocol;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
-import static org.apache.dubbo.common.constants.CommonConstants.GROUP_KEY;
-import static org.apache.dubbo.common.constants.CommonConstants.INTERFACE_KEY;
-import static org.apache.dubbo.common.constants.CommonConstants.PATH_KEY;
-import static org.apache.dubbo.common.constants.CommonConstants.VERSION_KEY;
-import static org.apache.dubbo.rpc.Constants.LAZY_CONNECT_KEY;
-import static org.apache.dubbo.rpc.protocol.dubbo.Constants.ON_CONNECT_KEY;
-import static org.apache.dubbo.rpc.protocol.dubbo.Constants.ON_DISCONNECT_KEY;
-import static org.apache.dubbo.remoting.Constants.DEFAULT_HEARTBEAT;
-import static org.apache.dubbo.remoting.Constants.HEARTBEAT_KEY;
-import static org.apache.dubbo.remoting.Constants.CHANNEL_READONLYEVENT_SENT_KEY;
-import static org.apache.dubbo.remoting.Constants.CLIENT_KEY;
-import static org.apache.dubbo.remoting.Constants.CODEC_KEY;
-import static org.apache.dubbo.remoting.Constants.DEFAULT_REMOTING_CLIENT;
-import static org.apache.dubbo.remoting.Constants.SERVER_KEY;
-import static org.apache.dubbo.rpc.Constants.DEFAULT_REMOTING_SERVER;
-import static org.apache.dubbo.rpc.protocol.dubbo.Constants.CALLBACK_SERVICE_KEY;
-import static org.apache.dubbo.remoting.Constants.CONNECTIONS_KEY;
-import static org.apache.dubbo.rpc.Constants.DEFAULT_STUB_EVENT;
-import static org.apache.dubbo.rpc.protocol.dubbo.Constants.IS_CALLBACK_SERVICE;
-import static org.apache.dubbo.rpc.Constants.IS_SERVER_KEY;
-import static org.apache.dubbo.rpc.protocol.dubbo.Constants.OPTIMIZER_KEY;
-import static org.apache.dubbo.rpc.Constants.STUB_EVENT_KEY;
-import static org.apache.dubbo.rpc.Constants.STUB_EVENT_METHODS_KEY;
-import static org.apache.dubbo.rpc.protocol.dubbo.Constants.SHARE_CONNECTIONS_KEY;
-import static org.apache.dubbo.rpc.protocol.dubbo.Constants.DEFAULT_SHARE_CONNECTIONS;
+import static org.apache.dubbo.common.constants.CommonConstants.*;
+import static org.apache.dubbo.remoting.Constants.*;
+import static org.apache.dubbo.rpc.Constants.*;
+import static org.apache.dubbo.rpc.protocol.dubbo.Constants.*;
 
 
 /**
@@ -107,7 +66,7 @@ public class DubboProtocol extends AbstractProtocol {
      */
     /**
      * 通信客户端集合
-     *
+     * <p>
      * key: 服务器地址。格式为：host:port
      */
     private final Map<String, List<ReferenceCountExchangeClient>> referenceClientMap = new ConcurrentHashMap<>();
@@ -123,30 +82,39 @@ public class DubboProtocol extends AbstractProtocol {
 
         @Override
         public CompletableFuture<Object> reply(ExchangeChannel channel, Object message) throws RemotingException {
-
+            //如果message不是Invocation类型，调用异常
             if (!(message instanceof Invocation)) {
                 throw new RemotingException(channel, "Unsupported request: "
                         + (message == null ? null : (message.getClass().getName() + ": " + message))
                         + ", channel: consumer: " + channel.getRemoteAddress() + " --> provider: " + channel.getLocalAddress());
             }
 
+            //得到Invocation对象
             Invocation inv = (Invocation) message;
+            //讲Invocation转换为Invoker对象
             Invoker<?> invoker = getInvoker(channel, inv);
             // need to consider backward-compatibility if it's a callback
+            //如果是回调，则需要考虑向后兼容性
             if (Boolean.TRUE.toString().equals(inv.getAttachments().get(IS_CALLBACK_SERVICE_INVOKE))) {
+                //得到方法级配置属性
                 String methodsStr = invoker.getUrl().getParameters().get("methods");
+                //是否有方法
                 boolean hasMethod = false;
                 if (methodsStr == null || !methodsStr.contains(",")) {
+                    //方法名是否等于methodsStr，单个方法
                     hasMethod = inv.getMethodName().equals(methodsStr);
                 } else {
+                    //得到方法数据
                     String[] methods = methodsStr.split(",");
                     for (String method : methods) {
+                        //找到相同的情况
                         if (inv.getMethodName().equals(method)) {
                             hasMethod = true;
                             break;
                         }
                     }
                 }
+                //如果没有方法名！=methodsStr的话
                 if (!hasMethod) {
                     logger.warn(new IllegalStateException("The methodName " + inv.getMethodName()
                             + " not found in callback service interface ,invoke will be ignored."
@@ -155,11 +123,15 @@ public class DubboProtocol extends AbstractProtocol {
                     return null;
                 }
             }
+            // 设置调用方的地址
             RpcContext.getContext().setRemoteAddress(channel.getRemoteAddress());
+            //执行毁掉
             Result result = invoker.invoke(inv);
+            //result执行完后Function.identity()
             return result.completionFuture().thenApply(Function.identity());
         }
 
+        //用于处理服务消费者的单次调用的消息，通过判断消息类型是不是 Invocation 。
         @Override
         public void received(Channel channel, Object message) throws RemotingException {
             if (message instanceof Invocation) {
@@ -246,19 +218,26 @@ public class DubboProtocol extends AbstractProtocol {
                         .equals(NetUtils.filterLocalHost(address.getAddress().getHostAddress()));
     }
 
+    //获得请求对应的 Invoker 对象
     Invoker<?> getInvoker(Channel channel, Invocation inv) throws RemotingException {
+        //是否回调服务
         boolean isCallBackServiceInvoke = false;
+        //是否本地存根
         boolean isStubServiceInvoke = false;
+        //获得本地地址端口
         int port = channel.getLocalAddress().getPort();
+        //得到隐式参数path
         String path = inv.getAttachments().get(PATH_KEY);
 
         // if it's callback service on client side
+        //如果是本地存根
         isStubServiceInvoke = Boolean.TRUE.toString().equals(inv.getAttachments().get(STUB_EVENT_KEY));
         if (isStubServiceInvoke) {
+            //获得远程方法地址端口
             port = channel.getRemoteAddress().getPort();
         }
 
-        //callback
+        //callback 如果是参数回调，获得真正的服务名 `path` 。
         isCallBackServiceInvoke = isClientSide(channel) && !isStubServiceInvoke;
         if (isCallBackServiceInvoke) {
             path += "." + inv.getAttachments().get(CALLBACK_SERVICE_KEY);
@@ -266,13 +245,14 @@ public class DubboProtocol extends AbstractProtocol {
         }
 
         String serviceKey = serviceKey(port, path, inv.getAttachments().get(VERSION_KEY), inv.getAttachments().get(GROUP_KEY));
+        //从map中得到DubboExporter
         DubboExporter<?> exporter = (DubboExporter<?>) exporterMap.get(serviceKey);
 
         if (exporter == null) {
             throw new RemotingException(channel, "Not found exported service: " + serviceKey + " in " + exporterMap.keySet() + ", may be version or group mismatch " +
                     ", channel: consumer: " + channel.getRemoteAddress() + " --> provider: " + channel.getLocalAddress() + ", message:" + inv);
         }
-
+        //获得invoker对象
         return exporter.getInvoker();
     }
 
@@ -372,6 +352,7 @@ public class DubboProtocol extends AbstractProtocol {
 
     /**
      * // 初始化序列化优化器
+     *
      * @param url url地址
      * @throws RpcException
      */
@@ -427,6 +408,7 @@ public class DubboProtocol extends AbstractProtocol {
 
     /**
      * 获得连接服务提供者的远程通信客户端数组
+     *
      * @param url
      * @return
      */
@@ -619,7 +601,7 @@ public class DubboProtocol extends AbstractProtocol {
             // connection should be lazy
             if (url.getParameter(LAZY_CONNECT_KEY, false)) {
                 client = new LazyConnectExchangeClient(url, requestHandler);
-            // 直接连接，创建 HeaderExchangeClient 对象
+                // 直接连接，创建 HeaderExchangeClient 对象
             } else {
                 client = Exchangers.connect(url, requestHandler);
             }

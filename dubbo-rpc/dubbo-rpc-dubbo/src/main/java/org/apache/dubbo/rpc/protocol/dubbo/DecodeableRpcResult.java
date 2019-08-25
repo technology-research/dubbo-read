@@ -38,6 +38,13 @@ import java.io.OutputStream;
 import java.lang.reflect.Type;
 import java.util.Map;
 
+/**
+ * 可解码的 RpcResult 实现类。
+ * 当服务提供者者，返回服务消费者调用结果，前者编码的 RpcResult 对象，后者解码成 DecodeableRpcResult 对象。
+ *
+ * 从目前的代码实现来看，Codec 接口，可不实现。
+ */
+
 public class DecodeableRpcResult extends AppResponse implements Codec, Decodeable {
 
     private static final Logger log = LoggerFactory.getLogger(DecodeableRpcResult.class);
@@ -74,14 +81,17 @@ public class DecodeableRpcResult extends AppResponse implements Codec, Decodeabl
     public Object decode(Channel channel, InputStream input) throws IOException {
         ObjectInput in = CodecSupport.getSerialization(channel.getUrl(), serializationType)
                 .deserialize(channel.getUrl(), input);
-
+    //读取标志位
         byte flag = in.readByte();
         switch (flag) {
+            //无返回值
             case DubboCodec.RESPONSE_NULL_VALUE:
                 break;
+                //有返回值
             case DubboCodec.RESPONSE_VALUE:
                 handleValue(in);
                 break;
+                //异常
             case DubboCodec.RESPONSE_WITH_EXCEPTION:
                 handleException(in);
                 break;
@@ -122,8 +132,14 @@ public class DecodeableRpcResult extends AppResponse implements Codec, Decodeabl
         }
     }
 
+    /**
+     * 处理返回值
+     * @param in
+     * @throws IOException
+     */
     private void handleValue(ObjectInput in) throws IOException {
         try {
+
             Type[] returnTypes = RpcUtils.getReturnTypes(invocation);
             Object value = null;
             if (ArrayUtils.isEmpty(returnTypes)) {

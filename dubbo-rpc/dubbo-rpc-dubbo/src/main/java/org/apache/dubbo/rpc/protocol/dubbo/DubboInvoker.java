@@ -47,15 +47,19 @@ import static org.apache.dubbo.rpc.Constants.TOKEN_KEY;
 
 /**
  * DubboInvoker
+ *
  */
 public class DubboInvoker<T> extends AbstractInvoker<T> {
 
     private final ExchangeClient[] clients;
-
+    //使用的{@link #clinets}的位置
     private final AtomicPositiveInteger index = new AtomicPositiveInteger();
 
     private final String version;
 
+    /**
+     * 销毁锁
+     */
     private final ReentrantLock destroyLock = new ReentrantLock();
 
     private final Set<Invoker<?>> invokers;
@@ -74,25 +78,35 @@ public class DubboInvoker<T> extends AbstractInvoker<T> {
 
     @Override
     protected Result doInvoke(final Invocation invocation) throws Throwable {
+        //转换为RpcInvocation
         RpcInvocation inv = (RpcInvocation) invocation;
+        //得到方法名
         final String methodName = RpcUtils.getMethodName(invocation);
+        //向RpcInvocatio设置path version
         inv.setAttachment(PATH_KEY, getUrl().getPath());
         inv.setAttachment(VERSION_KEY, version);
-
+        // 获得 ExchangeClient 对象。如果只有一个客户端
         ExchangeClient currentClient;
         if (clients.length == 1) {
             currentClient = clients[0];
         } else {
+            //取模
             currentClient = clients[index.getAndIncrement() % clients.length];
         }
         try {
+            //是否单项调用
             boolean isOneway = RpcUtils.isOneway(getUrl(), invocation);
+            //获得超时时间，默认1000
             int timeout = getUrl().getMethodPositiveParameter(methodName, TIMEOUT_KEY, DEFAULT_TIMEOUT);
             if (isOneway) {
                 boolean isSent = getUrl().getMethodParameter(methodName, Constants.SENT_KEY, false);
                 currentClient.send(inv, isSent);
                 return AsyncRpcResult.newDefaultAsyncResult(invocation);
+                //异步调用
             } else {
+                //设置 RpcContext.future = null ，无需 FutureFilter ，异步回调。
+                //调用 ExchangeClient#request(invocation, timeout) 方法，发送请求。
+                //调用 ResponseFuture#get() 方法，阻塞等待，返回结果。
                 AsyncRpcResult asyncRpcResult = new AsyncRpcResult(inv);
                 CompletableFuture<Object> responseFuture = currentClient.request(inv, timeout);
                 asyncRpcResult.subscribeTo(responseFuture);
