@@ -55,15 +55,28 @@ import static org.apache.dubbo.rpc.Constants.GENERIC_KEY;
 
 /**
  * HttpProtocol
+ * 继承 AbstractProxyProtocol 抽象类
  */
 public class HttpProtocol extends AbstractProxyProtocol {
 
     public static final int DEFAULT_PORT = 80;
 
+    /**
+     * 服务集合
+     * key ip:port
+     */
     private final Map<String, HttpServer> serverMap = new ConcurrentHashMap<String, HttpServer>();
 
+    /**
+     * Spring HttpInvokerServiceExporter 集合
+     *
+     * key：path 服务名
+     */
     private final Map<String, HttpInvokerServiceExporter> skeletonMap = new ConcurrentHashMap<String, HttpInvokerServiceExporter>();
 
+    /**
+     * HttpBinder$Adaptive 对象
+     */
     private HttpBinder httpBinder;
 
     public HttpProtocol() {
@@ -79,17 +92,29 @@ public class HttpProtocol extends AbstractProxyProtocol {
         return DEFAULT_PORT;
     }
 
+    /**
+     * 暴露
+     * @param impl 服务 Proxy 对象
+     * @param type 服务接口
+     * @param url URL
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     @Override
     protected <T> Runnable doExport(final T impl, Class<T> type, URL url) throws RpcException {
+        //获得服务器地址
         String addr = getAddr(url);
+        //获得HttpService对象，若不存在，进行创建
         HttpServer server = serverMap.get(addr);
         if (server == null) {
+            //绑定url和网络处理器
             server = httpBinder.bind(url, new InternalHandler());
             serverMap.put(addr, server);
         }
         final String path = url.getAbsolutePath();
         skeletonMap.put(path, createExporter(impl, type));
-
+        //泛化路径
         final String genericPath = path + "/" + GENERIC_KEY;
 
         skeletonMap.put(genericPath, createExporter(impl, GenericService.class));
@@ -114,13 +139,24 @@ public class HttpProtocol extends AbstractProxyProtocol {
         return httpServiceExporter;
     }
 
+    /**
+     * 引用服务
+     * @param serviceType
+     * @param url URL
+     * @param <T>
+     * @return
+     * @throws RpcException
+     */
     @Override
     @SuppressWarnings("unchecked")
     protected <T> T doRefer(final Class<T> serviceType, final URL url) throws RpcException {
+        //得到泛化接口名称
         final String generic = url.getParameter(GENERIC_KEY);
+        //判断是否泛化请求
         final boolean isGeneric = ProtocolUtils.isGeneric(generic) || serviceType.equals(GenericService.class);
-
+        //创建HttpInvokerProxyFactoryBean
         final HttpInvokerProxyFactoryBean httpProxyFactoryBean = new HttpInvokerProxyFactoryBean();
+        //设置远程调用工程
         httpProxyFactoryBean.setRemoteInvocationFactory(new RemoteInvocationFactory() {
             @Override
             public RemoteInvocation createRemoteInvocation(MethodInvocation methodInvocation) {
@@ -145,6 +181,7 @@ public class HttpProtocol extends AbstractProxyProtocol {
                         invocation = new RemoteInvocation(methodInvocation);
                     }
                 }
+                //如果是泛化调用
                 if (isGeneric) {
                     invocation.addAttribute(GENERIC_KEY, generic);
                 }
@@ -156,9 +193,11 @@ public class HttpProtocol extends AbstractProxyProtocol {
         if (isGeneric) {
             key = key + "/" + GENERIC_KEY;
         }
-
+        //设置服务url
         httpProxyFactoryBean.setServiceUrl(key);
+        //设置服务接口
         httpProxyFactoryBean.setServiceInterface(serviceType);
+        //得到客户端全路径
         String client = url.getParameter(Constants.CLIENT_KEY);
         if (StringUtils.isEmpty(client) || "simple".equals(client)) {
             SimpleHttpInvokerRequestExecutor httpInvokerRequestExecutor = new SimpleHttpInvokerRequestExecutor() {
@@ -166,11 +205,15 @@ public class HttpProtocol extends AbstractProxyProtocol {
                 protected void prepareConnection(HttpURLConnection con,
                                                  int contentLength) throws IOException {
                     super.prepareConnection(con, contentLength);
+                    //设置读超时
                     con.setReadTimeout(url.getParameter(TIMEOUT_KEY, DEFAULT_TIMEOUT));
+                    //设置连接超时
                     con.setConnectTimeout(url.getParameter(Constants.CONNECT_TIMEOUT_KEY, Constants.DEFAULT_CONNECT_TIMEOUT));
                 }
             };
+            //设置调用请求执行器
             httpProxyFactoryBean.setHttpInvokerRequestExecutor(httpInvokerRequestExecutor);
+            //如果客户端为commons
         } else if ("commons".equals(client)) {
             HttpComponentsHttpInvokerRequestExecutor httpInvokerRequestExecutor = new HttpComponentsHttpInvokerRequestExecutor();
             httpInvokerRequestExecutor.setReadTimeout(url.getParameter(TIMEOUT_KEY, DEFAULT_TIMEOUT));
@@ -207,12 +250,16 @@ public class HttpProtocol extends AbstractProxyProtocol {
         public void handle(HttpServletRequest request, HttpServletResponse response)
                 throws IOException, ServletException {
             String uri = request.getRequestURI();
+            // 获得 HttpInvokerServiceExporter 对象
             HttpInvokerServiceExporter skeleton = skeletonMap.get(uri);
+            //必须为post请求
             if (!"POST".equalsIgnoreCase(request.getMethod())) {
                 response.setStatus(500);
             } else {
+                //设置远程地址
                 RpcContext.getContext().setRemoteAddress(request.getRemoteAddr(), request.getRemotePort());
                 try {
+                    //处理请求
                     skeleton.handleRequest(request, response);
                 } catch (Throwable e) {
                     throw new ServletException(e);
