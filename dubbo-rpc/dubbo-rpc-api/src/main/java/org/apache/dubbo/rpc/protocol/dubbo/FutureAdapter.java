@@ -27,9 +27,12 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * FutureAdapter
+ * 实现 Future 接口，适配 ResponseFuture 。通过这样的方式，对上层调用方，透明化 ResponseFuture 的存在
  */
 public class FutureAdapter<V> extends CompletableFuture<V> {
-
+    /**
+     * app异步响应
+     */
     private CompletableFuture<AppResponse> appResponseFuture;
 
     public FutureAdapter(CompletableFuture<AppResponse> future) {
