@@ -31,34 +31,45 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-@Priority(Integer.MIN_VALUE + 1)
+/**
+ * 处理RpcContext的Filter
+ */
+@Priority(Integer.MIN_VALUE + 1)//排在LoggingFilter的后面
 public class RpcContextFilter implements ContainerRequestFilter, ClientRequestFilter {
-
+    //传递Dubbo Attachment 的Header
     private static final String DUBBO_ATTACHMENT_HEADER = "Dubbo-Attachments";
-
+    //目前，我们使用一个头部来保存附件，因此总的附件大小限制大约为8k
     // currently we use a single header to hold the attachments so that the total attachment size limit is about 8k
     private static final int MAX_HEADER_SIZE = 8 * 1024;
 
-    @Override
+    @Override//Server的filter
     public void filter(ContainerRequestContext requestContext) throws IOException {
+        //设置RpcContext的Request jboss的api获得http的request
         HttpServletRequest request = ResteasyProviderFactory.getContextData(HttpServletRequest.class);
         RpcContext.getContext().setRequest(request);
 
-        // this only works for servlet containers
+        // this only works for servlet containers 这只适用于servlet容器
         if (request != null && RpcContext.getContext().getRemoteAddress() == null) {
+            //从request中获取
             RpcContext.getContext().setRemoteAddress(request.getRemoteAddr(), request.getRemotePort());
         }
-
+        //设置RpcContext的Response
         RpcContext.getContext().setResponse(ResteasyProviderFactory.getContextData(HttpServletResponse.class));
-
+        //得到headers
         String headers = requestContext.getHeaderString(DUBBO_ATTACHMENT_HEADER);
         if (headers != null) {
+            //根据,分割循环
             for (String header : headers.split(",")) {
+                //寻找=
                 int index = header.indexOf("=");
+
                 if (index > 0) {
+                    //按照=分割得到key
                     String key = header.substring(0, index);
+                    //得到value
                     String value = header.substring(index + 1);
                     if (!StringUtils.isEmpty(key)) {
+                        //设置到RpcContext中
                         RpcContext.getContext().setAttachment(key.trim(), value.trim());
                     }
                 }

@@ -57,7 +57,7 @@ public class RpcContext {
     /**
      * use internal thread local to improve performance
      */
-    // FIXME REQUEST_CONTEXT
+    // FIXME REQUEST_CONTEXT 请求上下文
     private static final InternalThreadLocal<RpcContext> LOCAL = new InternalThreadLocal<RpcContext>() {
         @Override
         protected RpcContext initialValue() {
@@ -65,31 +65,32 @@ public class RpcContext {
         }
     };
 
-    // FIXME RESPONSE_CONTEXT
+    // FIXME RESPONSE_CONTEXT 响应上下文
     private static final InternalThreadLocal<RpcContext> SERVER_LOCAL = new InternalThreadLocal<RpcContext>() {
         @Override
         protected RpcContext initialValue() {
             return new RpcContext();
         }
     };
-
+    //隐式参数
     private final Map<String, String> attachments = new HashMap<String, String>();
+    //
     private final Map<String, Object> values = new HashMap<String, Object>();
-
+    //可调用服务的URL对象集合
     private List<URL> urls;
-
+    //调用服务的URL对象
     private URL url;
-
+    //方法名
     private String methodName;
 
     private Class<?>[] parameterTypes;
-
+    //参数数组
     private Object[] arguments;
-
+    //服务消费者地址
     private InetSocketAddress localAddress;
-
+    //提供者地址
     private InetSocketAddress remoteAddress;
-
+     //提供者应用名称
     private String remoteApplicationName;
 
     @Deprecated
@@ -101,8 +102,13 @@ public class RpcContext {
 
     // now we don't use the 'values' map to hold these objects
     // we want these objects to be as generic as possible
+    //请求
     private Object request;
+    //响应
     private Object response;
+    /**
+     * 异步上下文
+     */
     private AsyncContext asyncContext;
 
 

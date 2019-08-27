@@ -44,7 +44,7 @@ import static org.apache.dubbo.rpc.Constants.TOKEN_KEY;
 /**
  * ContextFilter set the provider RpcContext with invoker, invocation, local port it is using and host for
  * current execution thread.
- *
+ * 实现 Filter 接口，服务提供者的 ContextFilter 实现类
  * @see RpcContext
  */
 @Activate(group = PROVIDER, order = -10000)
@@ -57,6 +57,7 @@ public class ContextFilter extends ListenableFilter {
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        //创建新的 attachments 集合，清理公用的隐式参数
         Map<String, String> attachments = invocation.getAttachments();
         if (attachments != null) {
             attachments = new HashMap<>(attachments);
@@ -72,6 +73,7 @@ public class ContextFilter extends ListenableFilter {
             attachments.remove(TAG_KEY);
             attachments.remove(FORCE_USE_TAG);
         }
+        // 设置 RpcContext 对象
         RpcContext.getContext()
                 .setInvoker(invoker)
                 .setInvocation(invocation)
@@ -81,6 +83,7 @@ public class ContextFilter extends ListenableFilter {
 
         // merged from dubbox
         // we may already added some attachments into RpcContext before this filter (e.g. in rest protocol)
+        //我们可能已经在此过滤器之前将一些附件添加到RpcContext中(例如在rest协议中)
         if (attachments != null) {
             if (RpcContext.getContext().getAttachments() != null) {
                 RpcContext.getContext().getAttachments().putAll(attachments);
@@ -96,6 +99,7 @@ public class ContextFilter extends ListenableFilter {
             return invoker.invoke(invocation);
         } finally {
             // IMPORTANT! For async scenario, we must remove context from current thread, so we always create a new RpcContext for the next invoke for the same thread.
+            //重要!对于异步场景，我们必须从当前线程中删除上下文，因此我们总是为相同线程的下一个调用创建一个新的RpcContext。
             RpcContext.removeContext();
             RpcContext.removeServerContext();
         }

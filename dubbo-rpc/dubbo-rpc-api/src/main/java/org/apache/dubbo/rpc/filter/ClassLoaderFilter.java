@@ -26,17 +26,23 @@ import org.apache.dubbo.rpc.RpcException;
 
 /**
  * Set the current execution thread class loader to service interface's class loader.
+ * 实现 Filter 接口，类加载器切换过滤器实现类
+ * 通过Dubbo Spi 自适应机制针对provider，顺序为-30000
  */
 @Activate(group = CommonConstants.PROVIDER, order = -30000)
 public class ClassLoaderFilter implements Filter {
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        //得到线程中的上下文类加载器
         ClassLoader ocl = Thread.currentThread().getContextClassLoader();
+        //将上下文中的类加载器设置为调用接口的类加载器
         Thread.currentThread().setContextClassLoader(invoker.getInterface().getClassLoader());
         try {
+            //执行invoker
             return invoker.invoke(invocation);
         } finally {
+            //最后在将上线文的类加载器切换为原来的类加载器
             Thread.currentThread().setContextClassLoader(ocl);
         }
     }

@@ -50,7 +50,7 @@ public class ProtocolFilterWrapper implements Protocol {
 
 
     /**
-     * 构建调用者链
+     * 创建带 Filter 链的 Invoker 对象
      * @param invoker 服务调用者
      * @param key 获取URL参数名
      * @param group 分驻
