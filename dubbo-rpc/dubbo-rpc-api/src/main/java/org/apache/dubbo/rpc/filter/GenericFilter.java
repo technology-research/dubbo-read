@@ -51,6 +51,7 @@ import static org.apache.dubbo.rpc.Constants.GENERIC_SERIALIZATION_PROTOBUF;
 
 /**
  * GenericInvokerFilter.
+ * 服务提供者泛化过滤器
  */
 @Activate(group = CommonConstants.PROVIDER, order = -20000)
 public class GenericFilter extends ListenableFilter {
@@ -61,6 +62,7 @@ public class GenericFilter extends ListenableFilter {
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation inv) throws RpcException {
+        //泛化引用的调用
         if ((inv.getMethodName().equals($INVOKE) || inv.getMethodName().equals($INVOKE_ASYNC))
                 && inv.getArguments() != null
                 && inv.getArguments().length == 3
@@ -69,7 +71,9 @@ public class GenericFilter extends ListenableFilter {
             String[] types = (String[]) inv.getArguments()[1];
             Object[] args = (Object[]) inv.getArguments()[2];
             try {
+                // 获得对应的方法 Method 对象
                 Method method = ReflectUtils.findMethodByMethodSignature(invoker.getInterface(), name, types);
+                // 获得方法参数类型和方法参数数组
                 Class<?>[] params = method.getParameterTypes();
                 if (args == null) {
                     args = new Object[params.length];
@@ -79,10 +83,11 @@ public class GenericFilter extends ListenableFilter {
                 if (StringUtils.isBlank(generic)) {
                     generic = RpcContext.getContext().getAttachment(GENERIC_KEY);
                 }
-
+                // 【第一步】`true` ，反序列化参数，仅有 Map => POJO
                 if (StringUtils.isEmpty(generic)
                         || ProtocolUtils.isDefaultGenericSerialization(generic)) {
                     args = PojoUtils.realize(args, params, method.getGenericParameterTypes());
+                    // 【第一步】`nativejava` ，反序列化参数，byte[] => 方法参数
                 } else if (ProtocolUtils.isJavaGenericSerialization(generic)) {
                     for (int i = 0; i < args.length; i++) {
                         if (byte[].class == args[i].getClass()) {
@@ -103,6 +108,7 @@ public class GenericFilter extends ListenableFilter {
                                             args[i].getClass());
                         }
                     }
+                    // 【第一步】`bean` ，反序列化参数，JavaBeanDescriptor => 方法参数
                 } else if (ProtocolUtils.isBeanGenericSerialization(generic)) {
                     for (int i = 0; i < args.length; i++) {
                         if (args[i] instanceof JavaBeanDescriptor) {
@@ -117,6 +123,7 @@ public class GenericFilter extends ListenableFilter {
                                             args[i].getClass().getName());
                         }
                     }
+                    //为protobuf-json
                 } else if (ProtocolUtils.isProtobufGenericSerialization(generic)) {
                     // as proto3 only accept one protobuf parameter
                     if (args.length == 1 && args[0] instanceof String) {
@@ -138,6 +145,7 @@ public class GenericFilter extends ListenableFilter {
                                         args[0].getClass().getName());
                     }
                 }
+                //调用
                 return invoker.invoke(new RpcInvocation(method, args, inv.getAttachments()));
             } catch (NoSuchMethodException e) {
                 throw new RpcException(e.getMessage(), e);
@@ -145,6 +153,7 @@ public class GenericFilter extends ListenableFilter {
                 throw new RpcException(e.getMessage(), e);
             }
         }
+        // 普通调用
         return invoker.invoke(inv);
     }
 

@@ -46,40 +46,54 @@ import static org.apache.dubbo.rpc.Constants.GENERIC_KEY;
 
 /**
  * GenericImplInvokerFilter
+ * 实现 Filter 接口，服务消费者的泛化调用过滤器
+ * 消费组，泛化调用使用
  */
 @Activate(group = CommonConstants.CONSUMER, value = GENERIC_KEY, order = 20000)
 public class GenericImplFilter extends ListenableFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(GenericImplFilter.class);
 
+    //泛化变量类型
     private static final Class<?>[] GENERIC_PARAMETER_TYPES = new Class<?>[]{String.class, String[].class, Object[].class};
 
+    //泛化监听器
     public GenericImplFilter() {
         super.listener = new GenericImplListener();
     }
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        //得到generic配置
         String generic = invoker.getUrl().getParameter(GENERIC_KEY);
+        //是泛化调用，$invoke！=方法名$invokeAsync！=方法名，invocation为RpcInvocation类型
         if (ProtocolUtils.isGeneric(generic)
                 && (!$INVOKE.equals(invocation.getMethodName()) && !$INVOKE_ASYNC.equals(invocation.getMethodName()))
                 && invocation instanceof RpcInvocation) {
+            //包装得到RpcInvocation
             RpcInvocation invocation2 = new RpcInvocation(invocation);
+            //得到方法名
             String methodName = invocation2.getMethodName();
+            //得到变量类型
             Class<?>[] parameterTypes = invocation2.getParameterTypes();
+            //得到隐式参数
             Object[] arguments = invocation2.getArguments();
 
             String[] types = new String[parameterTypes.length];
             for (int i = 0; i < parameterTypes.length; i++) {
+                //得到types name
                 types[i] = ReflectUtils.getName(parameterTypes[i]);
             }
 
             Object[] args;
+            //如果generic为bean
             if (ProtocolUtils.isBeanGenericSerialization(generic)) {
                 args = new Object[arguments.length];
+                //遍历讲参数放到对象数组中
                 for (int i = 0; i < arguments.length; i++) {
                     args[i] = JavaBeanSerializeUtil.serialize(arguments[i], JavaBeanAccessor.METHOD);
                 }
+                //
             } else {
                 args = PojoUtils.generalize(arguments);
             }

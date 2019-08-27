@@ -46,6 +46,7 @@ public abstract class AbstractProxyFactory implements ProxyFactory {
             if (types != null && types.length > 0) {
                 interfaces = new Class<?>[types.length + 2];
                 interfaces[0] = invoker.getInterface();
+                //回声测试
                 interfaces[1] = EchoService.class;
                 for (int i = 0; i < types.length; i++) {
                     // TODO can we load successfully for a different classloader?.
@@ -53,6 +54,7 @@ public abstract class AbstractProxyFactory implements ProxyFactory {
                 }
             }
         }
+        //增加EchoService接口，用于回声测试。
         if (interfaces == null) {
             interfaces = new Class<?>[]{invoker.getInterface(), EchoService.class};
         }

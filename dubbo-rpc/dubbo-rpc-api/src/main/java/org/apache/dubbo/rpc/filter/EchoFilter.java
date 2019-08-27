@@ -29,13 +29,16 @@ import static org.apache.dubbo.rpc.Constants.$ECHO;
 
 /**
  * Dubbo provided default Echo echo service, which is available for all dubbo provider service interface.
+ * 服务提供者，是不实现 EchoService 接口，而是通过 EchoFilter 实现。
  */
 @Activate(group = CommonConstants.PROVIDER, order = -110000)
 public class EchoFilter implements Filter {
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation inv) throws RpcException {
+        //如果方法名为$echo，并且隐式传参部位空，并且只有一个参数
         if (inv.getMethodName().equals($ECHO) && inv.getArguments() != null && inv.getArguments().length == 1) {
+            //返回异步结果
             return AsyncRpcResult.newDefaultAsyncResult(inv.getArguments()[0], inv);
         }
         return invoker.invoke(inv);
