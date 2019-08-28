@@ -54,21 +54,33 @@ public class ActiveLimitFilter extends ListenableFilter {
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        //得到消费者
         URL url = invoker.getUrl();
+        //得到方法名
         String methodName = invocation.getMethodName();
+        //得到最大并发值
         int max = invoker.getUrl().getMethodParameter(methodName, ACTIVES_KEY, 0);
+        //获得 RpcStatus 对象，基于服务 URL + 方法维度
         final RpcStatus rpcStatus = RpcStatus.getStatus(invoker.getUrl(), invocation.getMethodName());
+        //开始计数
         if (!RpcStatus.beginCount(url, methodName, max)) {
+            //获得超时值
             long timeout = invoker.getUrl().getMethodParameter(invocation.getMethodName(), TIMEOUT_KEY, 0);
+            //开始计时
             long start = System.currentTimeMillis();
+            //剩余可等待时间
             long remain = timeout;
+            //通过锁，有且仅有一个rpcStatus在等待
             synchronized (rpcStatus) {
+                // 循环，等待可并行执行请求数
                 while (!RpcStatus.beginCount(url, methodName, max)) {
                     try {
+                        // 等待，直到超时，或者被唤醒
                         rpcStatus.wait(remain);
                     } catch (InterruptedException e) {
                         // ignore
                     }
+                    // 判断是否没有剩余时长了，抛出 RpcException 异常
                     long elapsed = System.currentTimeMillis() - start;
                     remain = timeout - elapsed;
                     if (remain <= 0) {
@@ -81,7 +93,7 @@ public class ActiveLimitFilter extends ListenableFilter {
                 }
             }
         }
-
+        //设置隐式参数
         invocation.setAttachment(ACTIVELIMIT_FILTER_START_TIME, String.valueOf(System.currentTimeMillis()));
 
         return invoker.invoke(invocation);
