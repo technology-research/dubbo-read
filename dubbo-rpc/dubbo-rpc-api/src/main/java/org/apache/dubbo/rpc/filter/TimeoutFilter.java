@@ -35,7 +35,7 @@ import java.util.Arrays;
 public class TimeoutFilter extends ListenableFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(TimeoutFilter.class);
-
+    //超时过滤开始的时间
     private static final String TIMEOUT_FILTER_START_TIME = "timeout_filter_start_time";
 
     public TimeoutFilter() {
@@ -44,7 +44,9 @@ public class TimeoutFilter extends ListenableFilter {
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        //设置超时过滤器开始执行时间
         invocation.setAttachment(TIMEOUT_FILTER_START_TIME, String.valueOf(System.currentTimeMillis()));
+        //调用方法
         return invoker.invoke(invocation);
     }
 
@@ -52,10 +54,14 @@ public class TimeoutFilter extends ListenableFilter {
 
         @Override
         public void onResponse(Result appResponse, Invoker<?> invoker, Invocation invocation) {
+            //得到超时开始时间
             String startAttach = invocation.getAttachment(TIMEOUT_FILTER_START_TIME);
             if (startAttach != null) {
+                //得到总耗时
                 long elapsed = System.currentTimeMillis() - Long.valueOf(startAttach);
+                //总耗时和timeout比较，默认为无限超时
                 if (invoker.getUrl() != null && elapsed > invoker.getUrl().getMethodParameter(invocation.getMethodName(), "timeout", Integer.MAX_VALUE)) {
+                    //打印日志
                     if (logger.isWarnEnabled()) {
                         logger.warn("invoke time out. method: " + invocation.getMethodName() + " arguments: " + Arrays.toString(invocation.getArguments()) + " , url is " + invoker.getUrl() + ", invoke elapsed " + elapsed + " ms.");
                     }

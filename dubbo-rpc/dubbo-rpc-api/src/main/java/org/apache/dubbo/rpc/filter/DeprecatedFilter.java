@@ -34,24 +34,30 @@ import static org.apache.dubbo.rpc.Constants.DEPRECATED_KEY;
 /**
  * DeprecatedFilter logs error message if a invoked method has been marked as deprecated. To check whether a method
  * is deprecated or not it looks for <b>deprecated</b> attribute value and consider it is deprecated it value is <b>true</b>
- *
+ * 实现 Filter 接口，废弃调用的过滤器实现类。当调用废弃的服务方法时，打印错误日志提醒
  * @see Filter
  */
 @Activate(group = CommonConstants.CONSUMER, value = DEPRECATED_KEY)
 public class DeprecatedFilter implements Filter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DeprecatedFilter.class);
-
+    //已经打印日志的方法集合
     private static final Set<String> logged = new ConcurrentHashSet<String>();
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        //获得key
         String key = invoker.getInterface().getName() + "." + invocation.getMethodName();
+        //过滤重复key，保证幂等
         if (!logged.contains(key)) {
             logged.add(key);
+            //得到deprecated，如果为ture的话，代表方法这个方法是过期方法，打印日志
             if (invoker.getUrl().getMethodParameter(invocation.getMethodName(), DEPRECATED_KEY, false)) {
                 LOGGER.error("The service method " + invoker.getInterface().getName() + "." + getMethodSignature(invocation) + " is DEPRECATED! Declare from " + invoker.getUrl());
             }
+            //main ERROR filter.DeprecatedFilter:  [DUBBO] The service method com.alibaba.dubbo.demo.DemoService.say01(String)
+            // is DEPRECATED! Declare from dubbo://192.168.3.17:20880/com.alibaba.dubbo.demo.DemoService?accesslog=true&anyhost=true&application=demo-consumer&callbacks=1000&check=false&client=netty4&default.delay=-1&default.retries=0&delay=-1&deprecated=false&dubbo=2.0.0&generic=false&interface=com.alibaba.dubbo.demo.DemoService&methods=sayHello,callbackParam,say03,say04,say01,bye,say02&payload=1000&pid=16820&qos.port=33333&register.ip=192.168.3.17&remote.timestamp=1523720843597&say01.deprecated=true&sayHello.async=true&server=netty4&service.filter=demo&side=consumer&timeout=100000&timestamp=1523721049491,
+            // dubbo version: 2.0.0, current host: 192.168.3.17
         }
         return invoker.invoke(invocation);
     }
