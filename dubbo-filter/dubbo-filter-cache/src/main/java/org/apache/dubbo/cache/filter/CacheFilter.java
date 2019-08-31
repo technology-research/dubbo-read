@@ -91,10 +91,14 @@ public class CacheFilter implements Filter {
      */
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        //开始cache功能
         if (cacheFactory != null && ConfigUtils.isNotEmpty(invoker.getUrl().getMethodParameter(invocation.getMethodName(), CACHE_KEY))) {
+            //根据invoker的url和会话域得到cache对象
             Cache cache = cacheFactory.getCache(invoker.getUrl(), invocation);
             if (cache != null) {
+                // 获得 Cache Key
                 String key = StringUtils.toArgumentString(invocation.getArguments());
+                //得到结果
                 Object value = cache.get(key);
                 if (value != null) {
                     if (value instanceof ValueWrapper) {
@@ -103,8 +107,11 @@ public class CacheFilter implements Filter {
                         return AsyncRpcResult.newDefaultAsyncResult(value, invocation);
                     }
                 }
+                //调用得到结果
                 Result result = invoker.invoke(invocation);
+                //如果无异常
                 if (!result.hasException()) {
+                    //缓存结果
                     cache.put(key, new ValueWrapper(result.getValue()));
                 }
                 return result;
@@ -115,6 +122,7 @@ public class CacheFilter implements Filter {
 
     /**
      * Cache value wrapper.
+     * 缓存value包装器 进行序列化
      */
     static class ValueWrapper implements Serializable {
 

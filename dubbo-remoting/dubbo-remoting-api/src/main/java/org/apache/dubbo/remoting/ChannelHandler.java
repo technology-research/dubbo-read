@@ -21,6 +21,7 @@ import org.apache.dubbo.common.extension.SPI;
 
 /**
  * ChannelHandler. (API, Prototype, ThreadSafe)
+ * 通道处理器
  *
  * @see org.apache.dubbo.remoting.Transporter#bind(org.apache.dubbo.common.URL, ChannelHandler)
  * @see org.apache.dubbo.remoting.Transporter#connect(org.apache.dubbo.common.URL, ChannelHandler)
@@ -30,21 +31,21 @@ public interface ChannelHandler {
 
     /**
      * on channel connected.
-     *
+     * 连接客户端
      * @param channel channel.
      */
     void connected(Channel channel) throws RemotingException;
 
     /**
      * on channel disconnected.
-     *
+     * 取消连接
      * @param channel channel.
      */
     void disconnected(Channel channel) throws RemotingException;
 
     /**
      * on message sent.
-     *
+     * 向指定客户端您发送消息
      * @param channel channel.
      * @param message message.
      */
@@ -52,7 +53,7 @@ public interface ChannelHandler {
 
     /**
      * on message received.
-     *
+     * 接受指定客户端消息
      * @param channel channel.
      * @param message message.
      */

@@ -85,18 +85,28 @@ public class JValidator implements Validator {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public JValidator(URL url) {
+        //获得服务接口类
         this.clazz = ReflectUtils.forName(url.getServiceInterface());
+        //获得 jvalidation 配置项
         String jvalidation = url.getParameter("jvalidation");
         ValidatorFactory factory;
         if (jvalidation != null && jvalidation.length() > 0) {
+            //指定实现工厂
             factory = Validation.byProvider((Class) ReflectUtils.forName(jvalidation)).configure().buildValidatorFactory();
         } else {
+            //默认  如果我们未配置，并且引入 Hibernate Validator ，则使用的是 HibernateValidatorFactory 。
             factory = Validation.buildDefaultValidatorFactory();
         }
+        //赋值validator
         this.validator = factory.getValidator();
         this.methodClassMap = new ConcurrentHashMap<>();
     }
 
+    /**
+     * 判断是否为基本类型。若是基本类型，已经被【第一步】给验证了，避免重复验证
+     * @param cls
+     * @return
+     */
     private static boolean isPrimitives(Class<?> cls) {
         if (cls.isArray()) {
             return isPrimitive(cls.getComponentType());
@@ -243,34 +253,42 @@ public class JValidator implements Validator {
 
     @Override
     public void validate(String methodName, Class<?>[] parameterTypes, Object[] arguments) throws Exception {
+        //验证分组集合
         List<Class<?>> groups = new ArrayList<>();
+        //得到方法类
         Class<?> methodClass = methodClass(methodName);
         if (methodClass != null) {
             groups.add(methodClass);
         }
         Set<ConstraintViolation<?>> violations = new HashSet<>();
+        // 【第二种】添加方法的 @MethodValidated 注解的值对应的类，作为验证分组。
         Method method = clazz.getMethod(methodName, parameterTypes);
         Class<?>[] methodClasses;
         if (method.isAnnotationPresent(MethodValidated.class)){
+            //得到value
             methodClasses = method.getAnnotation(MethodValidated.class).value();
+            //添加到分组中
             groups.addAll(Arrays.asList(methodClasses));
         }
+        //【第三种】添加 Default.class 类，作为验证分组。在 JSR 303 中，未设置分组的验证注解，使用 Default.class 。
         // add into default group
         groups.add(0, Default.class);
+        // 【第四种】添加服务接口类，作为验证分组。
         groups.add(1, clazz);
 
         // convert list to array
         Class<?>[] classgroups = groups.toArray(new Class[groups.size()]);
-
+        // 【第一步】获得方法参数的 Bean 对象。因为，JSR 303 是 Java Bean Validation ，以 Bean 为维度。
         Object parameterBean = getMethodParameterBean(clazz, method, arguments);
+        // 【第一步】验证 Bean 对象。
         if (parameterBean != null) {
             violations.addAll(validator.validate(parameterBean, classgroups ));
         }
-
+        // 【第二步】验证集合参数
         for (Object arg : arguments) {
             validate(violations, arg, classgroups);
         }
-
+    // 若有错误，抛出 ConstraintViolationException 异常。
         if (!violations.isEmpty()) {
             logger.error("Failed to validate service: " + clazz.getName() + ", method: " + methodName + ", cause: " + violations);
             throw new ConstraintViolationException("Failed to validate service: " + clazz.getName() + ", method: " + methodName + ", cause: " + violations, violations);
@@ -279,7 +297,9 @@ public class JValidator implements Validator {
 
     private Class methodClass(String methodName) {
         Class<?> methodClass = null;
+        // 【第一种】添加以方法命名的内部接口，作为验证分组。例如 `ValidationService#save(...)` 方法，对应 `ValidationService.Save` 接口
         String methodClassName = clazz.getName() + "$" + toUpperMethoName(methodName);
+        //根据methodClassName得到类缓存
         Class cached = methodClassMap.get(methodClassName);
         if (cached != null) {
             return cached == clazz ? null : cached;

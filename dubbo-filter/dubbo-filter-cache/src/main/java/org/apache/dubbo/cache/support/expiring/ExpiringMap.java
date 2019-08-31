@@ -40,11 +40,17 @@ public class ExpiringMap<K, V> implements Map<K, V> {
      * default expire check interval (second)
      */
     private static final int DEFAULT_EXPIRATION_INTERVAL = 1;
-
+    /**
+     * 过期key个数
+     */
     private static AtomicInteger expireCount = new AtomicInteger(1);
-
+    /**
+     * 委托存储map
+     */
     private final ConcurrentHashMap<K, ExpiryObject> delegateMap;
-
+    /**
+     * 过期线程
+     */
     private final ExpireThread expireThread;
 
     public ExpiringMap() {
@@ -61,6 +67,7 @@ public class ExpiringMap<K, V> implements Map<K, V> {
     }
 
     public ExpiringMap(int timeToLive, int expirationInterval) {
+        //存活时间，到期时间间隔
         this(new ConcurrentHashMap<>(), timeToLive, expirationInterval);
     }
 

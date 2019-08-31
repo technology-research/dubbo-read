@@ -32,21 +32,21 @@ public interface Server extends Endpoint, Resetable, IdleSensible {
 
     /**
      * is bound.
-     *
+     *  是否绑定本地端口，提供服务。即，是否启动成功，可连接，接收消息等
      * @return bound
      */
     boolean isBound();
 
     /**
      * get channels.
-     *
+     * 获得连接上服务器的通道（客户端）们
      * @return channels
      */
     Collection<Channel> getChannels();
 
     /**
      * get channel.
-     *
+     * 得到通道
      * @param remoteAddress
      * @return channel
      */

@@ -24,10 +24,13 @@ import org.apache.dubbo.remoting.transport.ChannelHandlerDispatcher;
 
 /**
  * Transporter facade. (API, Static, ThreadSafe)
+ * Transporter 门面类。 Facade外观模式
+ * url :https://blog.csdn.net/hguisu/article/details/7533759
  */
 public class Transporters {
 
     static {
+        //校验重复jar包
         // check duplicate jar package
         Version.checkDuplicate(Transporters.class);
         Version.checkDuplicate(RemotingException.class);
@@ -53,6 +56,7 @@ public class Transporters {
         } else {
             handler = new ChannelHandlerDispatcher(handlers);
         }
+        // 创建 Server 对象
         return getTransporter().bind(url, handler);
     }
 

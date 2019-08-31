@@ -23,7 +23,7 @@ public interface Resetable {
 
     /**
      * reset.
-     *
+     *  可重置接口
      * @param url
      */
     void reset(URL url);

@@ -46,11 +46,13 @@ public class JCache implements org.apache.dubbo.cache.Cache {
     private final Cache<Object, Object> store;
 
     public JCache(URL url) {
+        //得到方法名
         String method = url.getParameter(METHOD_KEY, "");
+        //address.serviceKey.method=key
         String key = url.getAddress() + "." + url.getServiceKey() + "." + method;
         // jcache parameter is the full-qualified class name of SPI implementation
         String type = url.getParameter("jcache");
-
+        //得带CachingProvider
         CachingProvider provider = StringUtils.isEmpty(type) ? Caching.getCachingProvider() : Caching.getCachingProvider(type);
         CacheManager cacheManager = provider.getCacheManager();
         Cache<Object, Object> cache = cacheManager.getCache(key);

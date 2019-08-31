@@ -16,11 +16,13 @@
  */
 package org.apache.dubbo.remoting;
 
+import org.apache.dubbo.remoting.transport.dispatcher.connection.ConnectionOrderedChannelHandler;
+
 import java.net.InetSocketAddress;
 
 /**
  * RemotingException. (API, Prototype, ThreadSafe)
- *
+ * 基础异常 checked exception
  * @export
  * @see org.apache.dubbo.remoting.exchange.support.DefaultFuture#get()
  * @see org.apache.dubbo.remoting.Channel#send(Object, boolean)

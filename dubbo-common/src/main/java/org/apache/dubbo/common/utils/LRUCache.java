@@ -20,12 +20,17 @@ import java.util.LinkedHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * 实现 LinkedHashMap 类，LRU 缓存实现类
+ * @param <K>
+ * @param <V>
+ */
 public class LRUCache<K, V> extends LinkedHashMap<K, V> {
 
     private static final long serialVersionUID = -5167631809472116969L;
 
     private static final float DEFAULT_LOAD_FACTOR = 0.75f;
-
+    //默认最大容量
     private static final int DEFAULT_MAX_CAPACITY = 1000;
     private final Lock lock = new ReentrantLock();
     private volatile int maxCapacity;
@@ -35,17 +40,22 @@ public class LRUCache<K, V> extends LinkedHashMap<K, V> {
     }
 
     public LRUCache(int maxCapacity) {
+        //初始容量为16，负载因子为0.75当容量达到16*0.75后扩容, accessOrder为按访问顺序(调用get方法)的链表
         super(16, DEFAULT_LOAD_FACTOR, true);
+        //设置最大容量
         this.maxCapacity = maxCapacity;
     }
 
     @Override
     protected boolean removeEldestEntry(java.util.Map.Entry<K, V> eldest) {
+        //移除最老的原始，根据链表中元素的顺序可以分为：按插入顺序的链表，和按访问顺序(调用get方法)的链表。默认是按插入顺序排序，
+        // 如果指定按访问顺序排序，那么调用get方法后，会将这次访问的元素移至链表尾部，不断访问可以形成按访问顺序排序的链表。
         return size() > maxCapacity;
     }
 
     @Override
     public boolean containsKey(Object key) {
+        //lock 属性，锁。避免并发读写，导致死锁
         lock.lock();
         try {
             return super.containsKey(key);

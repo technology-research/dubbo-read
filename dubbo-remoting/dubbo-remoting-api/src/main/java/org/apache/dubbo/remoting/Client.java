@@ -19,6 +19,7 @@ package org.apache.dubbo.remoting;
 import org.apache.dubbo.common.Resetable;
 
 /**
+ * 远程客户端
  * Remoting Client. (API/SPI, Prototype, ThreadSafe)
  * <p>
  * <a href="http://en.wikipedia.org/wiki/Client%E2%80%93server_model">Client/Server</a>
@@ -29,6 +30,7 @@ public interface Client extends Endpoint, Channel, Resetable, IdleSensible {
 
     /**
      * reconnect.
+     * 重连
      */
     void reconnect() throws RemotingException;
 

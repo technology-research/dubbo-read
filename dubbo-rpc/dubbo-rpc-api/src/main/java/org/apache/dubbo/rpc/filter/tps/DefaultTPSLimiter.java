@@ -38,21 +38,35 @@ public class DefaultTPSLimiter implements TPSLimiter {
 
     @Override
     public boolean isAllowable(URL url, Invocation invocation) {
+        //得到tps配置，限流
         int rate = url.getParameter(TPS_LIMIT_RATE_KEY, -1);
+        //得到tps.interval配置 获得 TPS 周期配置项，默认 60 秒
         long interval = url.getParameter(TPS_LIMIT_INTERVAL_KEY, DEFAULT_TPS_LIMIT_INTERVAL);
+        //得到服务唯一key
         String serviceKey = url.getServiceKey();
         if (rate > 0) {
+            //根据key去本地缓存中拿StatItem
             StatItem statItem = stats.get(serviceKey);
+            //不存在，创建
             if (statItem == null) {
-                stats.putIfAbsent(serviceKey, new StatItem(serviceKey, rate, interval));
-                statItem = stats.get(serviceKey);
+                //将参数设置
+                //stats.putIfAbsent(serviceKey, new StatItem(serviceKey, rate, interval));
+                //在根据serviceKey得到
+                //statItem = stats.get(serviceKey);
+                //FIXME 重构为如下方法代替
+                statItem = stats.computeIfAbsent(serviceKey, t -> new StatItem(serviceKey, rate, interval));
+
             } else {
                 //rate or interval has changed, rebuild
+                //如果statItem的rate不等于得到tps配置或者interval不等于获得 TPS 周期配置项
                 if (statItem.getRate() != rate || statItem.getInterval() != interval) {
+                    //新设置进行
                     stats.put(serviceKey, new StatItem(serviceKey, rate, interval));
+                    //然后得到statItem
                     statItem = stats.get(serviceKey);
                 }
             }
+            //是否限流
             return statItem.isAllowable();
         } else {
             StatItem statItem = stats.get(serviceKey);

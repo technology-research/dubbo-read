@@ -22,6 +22,13 @@ package org.apache.dubbo.validation;
  */
 public interface Validator {
 
+    /**
+     * 方法参数校验
+     * @param methodName 方法名
+     * @param parameterTypes 变量类型数组
+     * @param arguments 参数值数组
+     * @throws Exception
+     */
     void validate(String methodName, Class<?>[] parameterTypes, Object[] arguments) throws Exception;
 
 }

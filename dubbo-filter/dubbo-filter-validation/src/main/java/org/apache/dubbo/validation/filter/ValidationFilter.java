@@ -80,11 +80,13 @@ public class ValidationFilter implements Filter {
      */
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        //校验器部位空，或者方法名不以$开头，或者validation为空
         if (validation != null && !invocation.getMethodName().startsWith("$")
                 && ConfigUtils.isNotEmpty(invoker.getUrl().getMethodParameter(invocation.getMethodName(), VALIDATION_KEY))) {
             try {
                 Validator validator = validation.getValidator(invoker.getUrl());
                 if (validator != null) {
+                    //校验方法名，参数类型，隐式参数
                     validator.validate(invocation.getMethodName(), invocation.getParameterTypes(), invocation.getArguments());
                 }
             } catch (RpcException e) {

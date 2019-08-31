@@ -29,6 +29,7 @@ import static org.apache.dubbo.common.constants.FilterConstants.VALIDATION_KEY;
 public interface Validation {
 
     /**
+     * 获得Validator对象
      * Return the instance of {@link Validator} for a given url.
      * @param url Invocation url
      * @return Instance of {@link Validator}

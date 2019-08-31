@@ -27,6 +27,9 @@ import org.apache.dubbo.rpc.RpcException;
 import org.apache.dubbo.rpc.filter.tps.DefaultTPSLimiter;
 import org.apache.dubbo.rpc.filter.tps.TPSLimiter;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 import static org.apache.dubbo.rpc.Constants.TPS_LIMIT_RATE_KEY;
 
 /**
@@ -43,7 +46,8 @@ public class TpsLimitFilter implements Filter {
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
-
+        //调用 TPSLimiter#isAllowable(url, invocation) 方法，根据 tps 限流规则判断是否限制此次调用。
+        // 若是，抛出 RpcException 异常。目前使用 TPSLimiter 作为限流器的实现类。
         if (!tpsLimiter.isAllowable(invoker.getUrl(), invocation)) {
             throw new RpcException(
                     "Failed to invoke service " +

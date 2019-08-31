@@ -53,7 +53,9 @@ public class LruCache implements Cache {
      * @param url A valid URL instance
      */
     public LruCache(URL url) {
+        //得到缓存大小，默认1000
         final int max = url.getParameter("cache.size", 1000);
+        //设置最大缓存大小
         this.store = new LRUCache<>(max);
     }
 

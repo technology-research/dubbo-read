@@ -21,7 +21,8 @@ import org.apache.dubbo.common.extension.Adaptive;
 import org.apache.dubbo.common.extension.SPI;
 import org.apache.dubbo.remoting.transport.dispatcher.all.AllDispatcher;
 
-/**
+/**\
+ * 调度器接口
  * ChannelHandlerWrapper (SPI, Singleton, ThreadSafe)
  */
 @SPI(AllDispatcher.NAME)
@@ -29,13 +30,15 @@ public interface Dispatcher {
 
     /**
      * dispatch the message to threadpool.
-     *
+     * 分发消息到不同的线程池中
      * @param handler
      * @param url
      * @return channel handler
+     * dubbo spi通过URL.dispather和URL.channel.handler设置
      */
     @Adaptive({Constants.DISPATCHER_KEY, "dispather", "channel.handler"})
     // The last two parameters are reserved for compatibility with the old configuration
+    //最后两个参数保留为与旧配置兼容
     ChannelHandler dispatch(ChannelHandler handler, URL url);
 
 }

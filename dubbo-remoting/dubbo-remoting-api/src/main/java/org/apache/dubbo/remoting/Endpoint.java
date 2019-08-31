@@ -22,8 +22,8 @@ import java.net.InetSocketAddress;
 
 /**
  * Endpoint. (API/SPI, Prototype, ThreadSafe)
- *
- *
+ * 端点 原型模式，线程安全
+ * 在 dubbo-remoting-api 中，一个 Client 或 Server ，都是一个 Endpoint 。
  * @see org.apache.dubbo.remoting.Channel
  * @see org.apache.dubbo.remoting.Client
  * @see org.apache.dubbo.remoting.Server
@@ -32,28 +32,28 @@ public interface Endpoint {
 
     /**
      * get url.
-     *
+     * 获得url
      * @return url
      */
     URL getUrl();
 
     /**
      * get channel handler.
-     *
+     * 得到管道处理器
      * @return channel handler
      */
     ChannelHandler getChannelHandler();
 
     /**
      * get local address.
-     *
+     * 得到本地地址
      * @return local address.
      */
     InetSocketAddress getLocalAddress();
 
     /**
      * send message.
-     *
+     * 发送消息
      * @param message
      * @throws RemotingException
      */
@@ -63,7 +63,7 @@ public interface Endpoint {
      * send message.
      *
      * @param message
-     * @param sent    already sent to socket?
+     * @param sent    already sent to socket? 已经发送到套接字?
      */
     void send(Object message, boolean sent) throws RemotingException;
 
@@ -74,6 +74,7 @@ public interface Endpoint {
 
     /**
      * Graceful close the channel.
+     * 优雅地关闭通道。
      */
     void close(int timeout);
 

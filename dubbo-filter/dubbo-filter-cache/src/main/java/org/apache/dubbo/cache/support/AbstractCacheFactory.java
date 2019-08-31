@@ -41,29 +41,38 @@ public abstract class AbstractCacheFactory implements CacheFactory {
 
     /**
      * This is used to store factory level-1 cached data.
+     * 缓存集合
      */
     private final ConcurrentMap<String, Cache> caches = new ConcurrentHashMap<String, Cache>();
 
     /**
-     *  Takes URL and invocation instance and return cache instance for a given url.
-     * @param url url of the method
+     * 根据url和会话域得到缓存
+     * Takes URL and invocation instance and return cache instance for a given url.
+     *
+     * @param url        url of the method
      * @param invocation invocation context.
      * @return Instance of cache store used as storage for caching return values.
      */
     @Override
     public Cache getCache(URL url, Invocation invocation) {
+        //得到url，添加方法名
         url = url.addParameter(METHOD_KEY, invocation.getMethodName());
+        //full
         String key = url.toFullString();
         Cache cache = caches.get(key);
         if (cache == null) {
-            caches.put(key, createCache(url));
-            cache = caches.get(key);
+            /*caches.put(key, createCache(url));
+            cache = caches.get(key);*/
+            //FIXME 重构如下
+            final URL url1=url;
+            caches.computeIfAbsent(key, t -> createCache(url1));
         }
         return cache;
     }
 
     /**
      * Takes url as an method argument and return new instance of cache store implemented by AbstractCacheFactory subclass.
+     *
      * @param url url of the method
      * @return Create and return new instance of cache store used as storage for caching return values.
      */
