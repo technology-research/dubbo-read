@@ -20,6 +20,7 @@ import com.alibaba.com.caucho.hessian.io.SerializerFactory;
 
 public class Hessian2SerializerFactory extends SerializerFactory {
 
+    //饿汉式
     public static final SerializerFactory SERIALIZER_FACTORY = new Hessian2SerializerFactory();
 
     private Hessian2SerializerFactory() {

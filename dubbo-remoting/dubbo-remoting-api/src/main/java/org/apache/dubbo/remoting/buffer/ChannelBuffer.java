@@ -205,6 +205,7 @@ public interface ChannelBuffer extends Comparable<ChannelBuffer> {
 
     /**
      * Returns the number of bytes (octets) this buffer can contain.
+     * 返回此缓冲区可以包含的字节数(八位字节)。
      */
     int capacity();
 

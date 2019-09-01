@@ -31,7 +31,9 @@ public class Hessian2ObjectInput implements ObjectInput {
     private final Hessian2Input mH2i;
 
     public Hessian2ObjectInput(InputStream is) {
+        //得到Hessian2Input
         mH2i = new Hessian2Input(is);
+        //设置序列化工程
         mH2i.setSerializerFactory(Hessian2SerializerFactory.SERIALIZER_FACTORY);
     }
 

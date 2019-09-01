@@ -20,12 +20,13 @@ import java.util.Collection;
 
 /**
  * Interface defining serialization optimizer, there are nothing implementations for now.
+ * 序列化优化器接口
  */
 public interface SerializationOptimizer {
 
     /**
      * Get serializable classes
-     *
+     * 得到可序列化的类
      * @return serializable classes
      * */
     Collection<Class> getSerializableClasses();

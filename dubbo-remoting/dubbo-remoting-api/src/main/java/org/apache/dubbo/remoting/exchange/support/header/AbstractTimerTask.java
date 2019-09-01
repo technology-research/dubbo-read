@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * AbstractTimerTask
+ * 抽象定时任务
  */
 public abstract class AbstractTimerTask implements TimerTask {
 

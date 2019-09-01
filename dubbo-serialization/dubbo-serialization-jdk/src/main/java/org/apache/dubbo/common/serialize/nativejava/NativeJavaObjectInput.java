@@ -33,6 +33,7 @@ public class NativeJavaObjectInput implements ObjectInput {
     private final ObjectInputStream inputStream;
 
     public NativeJavaObjectInput(InputStream is) throws IOException {
+        //得到inputStream
         this(new ObjectInputStream(is));
     }
 

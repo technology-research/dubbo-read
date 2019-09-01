@@ -43,23 +43,30 @@ import static org.apache.dubbo.remoting.Constants.TICKS_PER_WHEEL;
  * DefaultMessageClient
  */
 public class HeaderExchangeClient implements ExchangeClient {
-
+    //客户端
     private final Client client;
+    //信息传输通道
     private final ExchangeChannel channel;
-
+    //定时执行器
     private static final HashedWheelTimer IDLE_CHECK_TIMER = new HashedWheelTimer(
             new NamedThreadFactory("dubbo-client-idleCheck", true), 1, TimeUnit.SECONDS, TICKS_PER_WHEEL);
+    //心跳定时任务
     private HeartbeatTimerTask heartBeatTimerTask;
+    //重试定时任务
     private ReconnectTimerTask reconnectTimerTask;
 
     public HeaderExchangeClient(Client client, boolean startTimer) {
         Assert.notNull(client, "Client can't be null");
         this.client = client;
+        //得到信息传输通道
         this.channel = new HeaderExchangeChannel(client);
-
+        //如果开始执行定时
         if (startTimer) {
+            //得到url
             URL url = client.getUrl();
+            //开始执行定时重试
             startReconnectTask(url);
+            //开始执行定时心跳任务
             startHeartBeatTask(url);
         }
     }
@@ -175,12 +182,22 @@ public class HeaderExchangeClient implements ExchangeClient {
         return channel.hasAttribute(key);
     }
 
+    /**
+     * 开始心跳任务
+     * @param url
+     */
     private void startHeartBeatTask(URL url) {
+        //是否可以处理
         if (!client.canHandleIdle()) {
+            //得到抽象任务
             AbstractTimerTask.ChannelProvider cp = () -> Collections.singletonList(HeaderExchangeClient.this);
+            //得到心跳次数
             int heartbeat = getHeartbeat(url);
+            //计算最少持续时间的任务
             long heartbeatTick = calculateLeastDuration(heartbeat);
+            //得到心跳任务
             this.heartBeatTimerTask = new HeartbeatTimerTask(cp, heartbeatTick, heartbeat);
+            //开始执行
             IDLE_CHECK_TIMER.newTimeout(heartBeatTimerTask, heartbeatTick, TimeUnit.MILLISECONDS);
         }
     }
@@ -217,6 +234,7 @@ public class HeaderExchangeClient implements ExchangeClient {
     }
 
     private boolean shouldReconnect(URL url) {
+        //是否重连
         return url.getParameter(Constants.RECONNECT_KEY, true);
     }
 

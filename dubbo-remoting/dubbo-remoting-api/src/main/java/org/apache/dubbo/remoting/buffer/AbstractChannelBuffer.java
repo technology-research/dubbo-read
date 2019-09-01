@@ -24,12 +24,23 @@ import java.nio.ByteBuffer;
 
 public abstract class AbstractChannelBuffer implements ChannelBuffer {
 
+    /**
+     * 读位置
+     */
     private int readerIndex;
 
+    /**
+     * 写入位置
+     */
     private int writerIndex;
 
+    /**
+     * 标记读位置
+     */
     private int markedReaderIndex;
-
+    /**
+     * 标记的写入位置
+     */
     private int markedWriterIndex;
 
     @Override

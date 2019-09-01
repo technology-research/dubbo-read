@@ -42,13 +42,23 @@ import static org.apache.dubbo.remoting.Constants.DEFAULT_CHARSET;
 public class TelnetCodec extends TransportCodec {
 
     private static final Logger logger = LoggerFactory.getLogger(TelnetCodec.class);
-
+    /**
+     * 历史列表
+     */
     private static final String HISTORY_LIST_KEY = "telnet.history.list";
 
+    /**
+     * 历史索引
+     */
     private static final String HISTORY_INDEX_KEY = "telnet.history.index";
 
+    /**
+     * 启动
+     */
     private static final byte[] UP = new byte[]{27, 91, 65};
-
+    /**
+     * 下线
+     */
     private static final byte[] DOWN = new byte[]{27, 91, 66};
 
     private static final List<?> ENTER = Arrays.asList(
@@ -159,8 +169,11 @@ public class TelnetCodec extends TransportCodec {
 
     @Override
     public Object decode(Channel channel, ChannelBuffer buffer) throws IOException {
+        //得到可多字节数
         int readable = buffer.readableBytes();
+        //得到message字节
         byte[] message = new byte[readable];
+        //写入缓存区中
         buffer.readBytes(message);
         return decode(channel, buffer, readable, message);
     }
@@ -170,6 +183,7 @@ public class TelnetCodec extends TransportCodec {
         if (isClientSide(channel)) {
             return toString(message, getCharset(channel));
         }
+        //校验载荷
         checkPayload(channel, readable);
         if (message == null || message.length == 0) {
             return DecodeResult.NEED_MORE_INPUT;
@@ -184,7 +198,7 @@ public class TelnetCodec extends TransportCodec {
             }
             return DecodeResult.NEED_MORE_INPUT;
         }
-
+        //退出指令
         for (Object command : EXIT) {
             if (isEquals(message, (byte[]) command)) {
                 if (logger.isInfoEnabled()) {
@@ -194,8 +208,9 @@ public class TelnetCodec extends TransportCodec {
                 return null;
             }
         }
-
+        //启动
         boolean up = endsWith(message, UP);
+        //关闭
         boolean down = endsWith(message, DOWN);
         if (up || down) {
             LinkedList<String> history = (LinkedList<String>) channel.getAttribute(HISTORY_LIST_KEY);

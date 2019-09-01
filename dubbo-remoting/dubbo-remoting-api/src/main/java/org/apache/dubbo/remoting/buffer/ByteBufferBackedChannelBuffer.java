@@ -24,15 +24,21 @@ import java.nio.ByteBuffer;
 
 public class ByteBufferBackedChannelBuffer extends AbstractChannelBuffer {
 
+    /**
+     * 字节缓冲区
+     */
     private final ByteBuffer buffer;
 
+    /**
+     * 容量
+     */
     private final int capacity;
 
     public ByteBufferBackedChannelBuffer(ByteBuffer buffer) {
         if (buffer == null) {
             throw new NullPointerException("buffer");
         }
-
+        //复制
         this.buffer = buffer.slice();
         capacity = buffer.remaining();
         writerIndex(capacity);
@@ -46,9 +52,11 @@ public class ByteBufferBackedChannelBuffer extends AbstractChannelBuffer {
 
     @Override
     public ChannelBufferFactory factory() {
+        //如果是直接缓存区
         if (buffer.isDirect()) {
             return DirectChannelBufferFactory.getInstance();
         } else {
+            //使用堆管道
             return HeapChannelBufferFactory.getInstance();
         }
     }
@@ -68,7 +76,7 @@ public class ByteBufferBackedChannelBuffer extends AbstractChannelBuffer {
         } catch (IllegalArgumentException e) {
             throw new IndexOutOfBoundsException();
         }
-
+        //判断是否直接缓存区
         ByteBuffer dst = buffer.isDirect()
                 ? ByteBuffer.allocateDirect(length)
                 : ByteBuffer.allocate(length);

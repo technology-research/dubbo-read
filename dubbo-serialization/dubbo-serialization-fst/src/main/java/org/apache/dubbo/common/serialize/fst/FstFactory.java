@@ -27,11 +27,14 @@ import java.io.OutputStream;
 
 /**
  * Fst object input/output factory
+ * FST fast-serialization 是重新实现的 Java 快速对象序列化的开发包。
+ * 序列化速度更快（2-10倍）、体积更小，而且兼容 JDK 原生的序列化。要求 JDK 1.7 支持。
  */
 public class FstFactory {
 
+    //饿汉式
     private static final FstFactory factory = new FstFactory();
-
+    //得到fst配置
     private final FSTConfiguration conf = FSTConfiguration.createDefaultConfiguration();
 
 

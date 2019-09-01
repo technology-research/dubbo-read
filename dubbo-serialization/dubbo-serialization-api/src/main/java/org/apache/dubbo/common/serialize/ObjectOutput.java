@@ -20,6 +20,7 @@ import java.io.IOException;
 
 /**
  * Object output interface.
+ * 对象输出接口
  */
 public interface ObjectOutput extends DataOutput {
 

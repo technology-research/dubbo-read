@@ -25,22 +25,50 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class Request {
 
+    /**
+     * 事件-心跳
+     */
     public static final String HEARTBEAT_EVENT = null;
-
+    /**
+     * 事件-只读
+     */
     public static final String READONLY_EVENT = "R";
 
+    /**
+     * 请求编号自增序列
+     */
     private static final AtomicLong INVOKE_ID = new AtomicLong(0);
 
+    /**
+     * 请求编号
+     * ，JVM 进程内唯一
+     */
     private final long mId;
 
+    /**
+     * dubbo版本
+     */
     private String mVersion;
 
+    /**
+     * 是否需要响应
+     */
     private boolean mTwoWay = true;
 
+    /**
+     * 是否是时间，如心跳事件
+     */
     private boolean mEvent = false;
 
+    /**
+     * 是否异常的请求
+     * 在消息解析的时候会出现
+     */
     private boolean mBroken = false;
 
+    /**
+     * 请求数据
+     */
     private Object mData;
 
     public Request() {
@@ -53,10 +81,12 @@ public class Request {
 
     private static long newId() {
         // getAndIncrement() When it grows to MAX_VALUE, it will grow to MIN_VALUE, and the negative can be used as ID
+        //得到invokerid自增， 当它增长到MAX_VALUE时，它将增长到MIN_VALUE，并且负数可以用作ID
         return INVOKE_ID.getAndIncrement();
     }
 
     private static String safeToString(Object data) {
+        //装换数据为tostring
         if (data == null) {
             return null;
         }

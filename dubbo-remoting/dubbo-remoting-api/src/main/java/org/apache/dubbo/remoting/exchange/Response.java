@@ -21,73 +21,94 @@ package org.apache.dubbo.remoting.exchange;
  */
 public class Response {
 
+    /**
+     * 事件-心跳
+     */
     public static final String HEARTBEAT_EVENT = null;
 
+    /**
+     * 事件-只读
+     */
     public static final String READONLY_EVENT = "R";
 
     /**
-     * ok.
+     * ok.状态
      */
     public static final byte OK = 20;
 
     /**
-     * client side timeout.
+     * client side timeout. 客户端超时时间
      */
     public static final byte CLIENT_TIMEOUT = 30;
 
     /**
-     * server side timeout.
+     * server side timeout. 服务端超时时间
      */
     public static final byte SERVER_TIMEOUT = 31;
 
     /**
      * channel inactive, directly return the unfinished requests.
+     * 通道未激活，直接返回未完成的请求。
      */
     public static final byte CHANNEL_INACTIVE = 35;
 
     /**
      * request format error.
+     * 请求状态
      */
     public static final byte BAD_REQUEST = 40;
 
     /**
      * response format error.
+     * 响应状态
      */
     public static final byte BAD_RESPONSE = 50;
 
     /**
      * service not found.
+     * 服务未发现
      */
     public static final byte SERVICE_NOT_FOUND = 60;
 
     /**
      * service error.
+     * 服务异常
      */
     public static final byte SERVICE_ERROR = 70;
 
     /**
      * internal server error.
+     * 服务器内部错误
      */
     public static final byte SERVER_ERROR = 80;
 
     /**
      * internal server error.
+     * 客户端异常
      */
     public static final byte CLIENT_ERROR = 90;
 
     /**
      * server side threadpool exhausted and quick return.
+     * 服务器端threadpool耗尽并快速返回。
      */
     public static final byte SERVER_THREADPOOL_EXHAUSTED_ERROR = 100;
 
+    //响应编号
     private long mId = 0;
 
+    //版本
     private String mVersion;
 
+    /**
+     * 状态
+     */
     private byte mStatus = OK;
 
+    //是否事件
     private boolean mEvent = false;
 
+    //错误消息
     private String mErrorMsg;
 
     private Object mResult;

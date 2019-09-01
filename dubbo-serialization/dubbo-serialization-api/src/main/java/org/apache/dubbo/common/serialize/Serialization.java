@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
+ * 默认序列化协议为hessian2
  * Serialization strategy interface that specifies a serializer. (SPI, Singleton, ThreadSafe)
  *
  * The default extension is hessian2 and the default serialization implementation of the dubbo protocol.
@@ -36,13 +37,15 @@ import java.io.OutputStream;
 public interface Serialization {
 
     /**
+     * 得到内容类型唯一id
      * Get content type unique id, recommended that custom implementations use values greater than 20.
-     *
+     * 建议自定义实现使用大于20的值。
      * @return content type id
      */
     byte getContentTypeId();
 
     /**
+     * 得到内容类型
      * Get content type
      *
      * @return content type
@@ -50,6 +53,7 @@ public interface Serialization {
     String getContentType();
 
     /**
+     * 获取序列化实现实例
      * Get a serialization implementation instance
      *
      * @param url URL address for the remote service
@@ -61,6 +65,7 @@ public interface Serialization {
     ObjectOutput serialize(URL url, OutputStream output) throws IOException;
 
     /**
+     * 获取反序列化实现实例
      * Get a deserialization implementation instance
      *
      * @param url URL address for the remote service

@@ -41,41 +41,49 @@ import static org.apache.dubbo.common.constants.CommonConstants.TIMEOUT_KEY;
 
 /**
  * DefaultFuture.
+ * 实现 ResponseFuture 接口，默认响应 Future 实现类。同时，它也是所有 DefaultFuture 的管理容器。
  */
 public class DefaultFuture extends CompletableFuture<Object> {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultFuture.class);
-
+    //通道集合 请求编号
     private static final Map<Long, Channel> CHANNELS = new ConcurrentHashMap<>();
-
+    //future集合 key 请求编号
     private static final Map<Long, DefaultFuture> FUTURES = new ConcurrentHashMap<>();
-
+    //定时器
     public static final Timer TIME_OUT_TIMER = new HashedWheelTimer(
             new NamedThreadFactory("dubbo-future-timeout", true),
             30,
             TimeUnit.MILLISECONDS);
 
-    // invoke id.
+    // invoke id. 请求编号
     private final Long id;
+    //通道
     private final Channel channel;
     private final Request request;
     private final int timeout;
+    //开始时间
     private final long start = System.currentTimeMillis();
+    //发送请求时间
     private volatile long sent;
+    //超时校验任务
     private Timeout timeoutCheckTask;
 
     private DefaultFuture(Channel channel, Request request, int timeout) {
         this.channel = channel;
         this.request = request;
         this.id = request.getId();
+        //如果timeout<=0，默认1000
         this.timeout = timeout > 0 ? timeout : channel.getUrl().getPositiveParameter(TIMEOUT_KEY, DEFAULT_TIMEOUT);
         // put into waiting map.
+        //加入集合中
         FUTURES.put(id, this);
         CHANNELS.put(id, channel);
     }
 
     /**
      * check time out of the future
+     * 超市教研
      */
     private static void timeoutCheck(DefaultFuture future) {
         TimeoutCheckTask task = new TimeoutCheckTask(future.getId());

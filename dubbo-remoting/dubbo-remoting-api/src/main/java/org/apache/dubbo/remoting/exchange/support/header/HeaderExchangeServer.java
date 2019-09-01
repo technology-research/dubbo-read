@@ -48,22 +48,26 @@ import static org.apache.dubbo.remoting.utils.UrlUtils.getIdleTimeout;
 
 /**
  * ExchangeServerImpl
+ * 信息交换服务实现类，
  */
 public class HeaderExchangeServer implements ExchangeServer {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
+    //服务器
     private final Server server;
+    //是否已经关闭
     private AtomicBoolean closed = new AtomicBoolean(false);
-
+    //定时器
     private static final HashedWheelTimer IDLE_CHECK_TIMER = new HashedWheelTimer(new NamedThreadFactory("dubbo-server-idleCheck", true), 1,
             TimeUnit.SECONDS, TICKS_PER_WHEEL);
-
+    //关闭定时任务
     private CloseTimerTask closeTimerTask;
 
     public HeaderExchangeServer(Server server) {
         Assert.notNull(server, "server == null");
         this.server = server;
+        //开始校验空闲任务
         startIdleCheckTask(getUrl());
     }
 
@@ -144,14 +148,17 @@ public class HeaderExchangeServer implements ExchangeServer {
     }
 
     private void doClose() {
+        //如果是false改为true
         if (!closed.compareAndSet(false, true)) {
             return;
         }
+        //取消关闭任务
         cancelCloseTask();
     }
 
     private void cancelCloseTask() {
         if (closeTimerTask != null) {
+            //取消
             closeTimerTask.cancel();
         }
     }
@@ -265,7 +272,7 @@ public class HeaderExchangeServer implements ExchangeServer {
             CloseTimerTask closeTimerTask = new CloseTimerTask(cp, idleTimeoutTick, idleTimeout);
             this.closeTimerTask = closeTimerTask;
 
-            // init task and start timer.
+            // init task and start timer. 开始执行关闭任务
             IDLE_CHECK_TIMER.newTimeout(closeTimerTask, idleTimeoutTick, TimeUnit.MILLISECONDS);
         }
     }

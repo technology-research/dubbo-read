@@ -25,6 +25,7 @@ import org.apache.dubbo.remoting.exchange.Request;
 
 /**
  * HeartbeatTimerTask
+ * 心跳超时任务
  */
 public class HeartbeatTimerTask extends AbstractTimerTask {
 

@@ -20,12 +20,13 @@ import java.io.IOException;
 
 /**
  * Basic data type input interface.
+ * 基础数据类型输入接口
  */
 public interface DataInput {
 
     /**
      * Read boolean.
-     *
+     * 读bool值
      * @return boolean.
      * @throws IOException
      */
@@ -33,7 +34,7 @@ public interface DataInput {
 
     /**
      * Read byte.
-     *
+     * 读字节码值
      * @return byte value.
      * @throws IOException
      */
@@ -41,7 +42,7 @@ public interface DataInput {
 
     /**
      * Read short integer.
-     *
+     * 读short类型值
      * @return short.
      * @throws IOException
      */
@@ -49,7 +50,7 @@ public interface DataInput {
 
     /**
      * Read integer.
-     *
+     * 读int类型
      * @return integer.
      * @throws IOException
      */
@@ -57,7 +58,7 @@ public interface DataInput {
 
     /**
      * Read long.
-     *
+     * 读long
      * @return long.
      * @throws IOException
      */
@@ -81,7 +82,7 @@ public interface DataInput {
 
     /**
      * Read UTF-8 string.
-     *
+     * 读字符串为utf-8类型
      * @return string.
      * @throws IOException
      */
@@ -89,7 +90,7 @@ public interface DataInput {
 
     /**
      * Read byte array.
-     *
+     * 读字节数组
      * @return byte array.
      * @throws IOException
      */

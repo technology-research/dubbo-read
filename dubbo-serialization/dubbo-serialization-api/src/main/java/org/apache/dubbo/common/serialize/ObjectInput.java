@@ -21,12 +21,13 @@ import java.lang.reflect.Type;
 
 /**
  * Object input interface.
+ * 对象输入接口
  */
 public interface ObjectInput extends DataInput {
 
     /**
      * read object
-     *
+     * 读对象
      * @return object
      * @throws IOException if an I/O error occurs
      * @throws ClassNotFoundException if an ClassNotFoundException occurs
@@ -35,7 +36,7 @@ public interface ObjectInput extends DataInput {
 
     /**
      * read object
-     *
+     * 根据字节码文件读对象，返回对象
      * @param cls object class
      * @return object
      * @throws IOException if an I/O error occurs

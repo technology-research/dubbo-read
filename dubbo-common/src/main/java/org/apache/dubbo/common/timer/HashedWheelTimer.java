@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * 散列轮计时器
  * A {@link Timer} optimized for approximated I/O timeout scheduling.
  *
  * <h3>Tick Duration</h3>

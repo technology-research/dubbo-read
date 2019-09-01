@@ -37,6 +37,7 @@ import static org.apache.dubbo.common.constants.CommonConstants.TIMEOUT_KEY;
 
 /**
  * ExchangeReceiver
+ * 信息交换回复者
  */
 final class HeaderExchangeChannel implements ExchangeChannel {
 
@@ -55,17 +56,30 @@ final class HeaderExchangeChannel implements ExchangeChannel {
         this.channel = channel;
     }
 
+    /**
+     * 得到或者添加通道
+     * HeaderExchangeChannel 是传入 channel 属性的装饰器，每个实现的方法，都会调用 channel
+     * HeaderExchangeChannel=>NettyChannel=>NioSocketChannel
+     * @param ch
+     * @return
+     */
     static HeaderExchangeChannel getOrAddChannel(Channel ch) {
+
         if (ch == null) {
             return null;
         }
+        //获得请求头信息交换通道
         HeaderExchangeChannel ret = (HeaderExchangeChannel) ch.getAttribute(CHANNEL_KEY);
         if (ret == null) {
+            //如果为空，新创建
             ret = new HeaderExchangeChannel(ch);
+            //判断通道是否已经创建连接
             if (ch.isConnected()) {
+                //设置属性
                 ch.setAttribute(CHANNEL_KEY, ret);
             }
         }
+        //返回ret
         return ret;
     }
 
@@ -108,15 +122,17 @@ final class HeaderExchangeChannel implements ExchangeChannel {
         if (closed) {
             throw new RemotingException(this.getLocalAddress(), null, "Failed to send request " + request + ", cause: The channel " + this + " is closed!");
         }
-        // create request.
+        // create request. 创建请求
         Request req = new Request();
         req.setVersion(Version.getProtocolVersion());
-        req.setTwoWay(true);
+        req.setTwoWay(true);//需要响应
         req.setData(request);
+        //创建DefaultFuture对象
         DefaultFuture future = DefaultFuture.newFuture(channel, req, timeout);
         try {
             channel.send(req);
         } catch (RemotingException e) {
+            //失败了取消
             future.cancel();
             throw e;
         }
@@ -144,8 +160,10 @@ final class HeaderExchangeChannel implements ExchangeChannel {
             return;
         }
         closed = true;
+        //优雅停机
         if (timeout > 0) {
             long start = System.currentTimeMillis();
+            //如果还有future并且没到超时时间，就sleep10毫秒
             while (DefaultFuture.hasFuture(channel)
                     && System.currentTimeMillis() - start < timeout) {
                 try {
