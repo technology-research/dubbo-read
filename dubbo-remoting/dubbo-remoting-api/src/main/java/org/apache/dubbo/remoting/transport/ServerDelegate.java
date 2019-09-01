@@ -27,7 +27,7 @@ import java.util.Collection;
 
 /**
  * ServerDelegate
- *
+ * 服务端委托类
  *
  */
 public class ServerDelegate implements Server {

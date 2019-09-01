@@ -23,6 +23,7 @@ import org.apache.dubbo.remoting.RemotingException;
 
 /**
  * AbstractChannel
+ * 抽象通道类
  */
 public abstract class AbstractChannel extends AbstractPeer implements Channel {
 
@@ -32,6 +33,7 @@ public abstract class AbstractChannel extends AbstractPeer implements Channel {
 
     @Override
     public void send(Object message, boolean sent) throws RemotingException {
+        //如果关闭着抛出错误
         if (isClosed()) {
             throw new RemotingException(this, "Failed to send message "
                     + (message == null ? "" : message.getClass().getName()) + ":" + message

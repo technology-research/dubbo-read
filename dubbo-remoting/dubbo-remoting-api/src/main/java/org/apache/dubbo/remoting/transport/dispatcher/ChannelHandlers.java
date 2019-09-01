@@ -25,6 +25,9 @@ import org.apache.dubbo.remoting.transport.MultiMessageHandler;
 
 public class ChannelHandlers {
 
+    /**
+     * 饿汉式
+     */
     private static ChannelHandlers INSTANCE = new ChannelHandlers();
 
     protected ChannelHandlers() {

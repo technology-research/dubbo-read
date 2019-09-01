@@ -37,10 +37,14 @@ public class TransportCodec extends AbstractCodec {
 
     @Override
     public void encode(Channel channel, ChannelBuffer buffer, Object message) throws IOException {
+        //获得反序列化的ObjectInput对象
         OutputStream output = new ChannelBufferOutputStream(buffer);
         ObjectOutput objectOutput = getSerialization(channel).serialize(channel.getUrl(), output);
+        //编码数据，写入objectOutput
         encodeData(channel, objectOutput, message);
+        //刷新缓存
         objectOutput.flushBuffer();
+        //如果objectOutput可以强转为Cleanable  仅有 kryo 的 KryoObjectInput 、KryoObjectOutput 实现了 Cleanable 接口，需要释放资源。
         if (objectOutput instanceof Cleanable) {
             ((Cleanable) objectOutput).cleanup();
         }
@@ -66,6 +70,7 @@ public class TransportCodec extends AbstractCodec {
     }
 
     protected void encodeData(ObjectOutput output, Object message) throws IOException {
+        //讲message写入output
         output.writeObject(message);
     }
 

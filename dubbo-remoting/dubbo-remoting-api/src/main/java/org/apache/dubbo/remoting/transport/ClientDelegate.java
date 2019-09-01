@@ -24,7 +24,8 @@ import org.apache.dubbo.remoting.RemotingException;
 import java.net.InetSocketAddress;
 
 /**
- * ClientDelegate
+ * ClientDelegate 客户端委托
+ * 实现 Client 接口，客户端装饰者实现类。在每个实现的方法里，直接调用被装饰的 client 属性的方法。
  */
 public class ClientDelegate implements Client {
 

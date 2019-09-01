@@ -38,14 +38,27 @@ import static org.apache.dubbo.common.serialize.Constants.NATIVE_JAVA_SERIALIZAT
 public class CodecSupport {
 
     private static final Logger logger = LoggerFactory.getLogger(CodecSupport.class);
+    /**
+     * 序列化对象集合
+     * key：序列化类型编号 {@link Serialization#getContentTypeId()}
+     */
     private static Map<Byte, Serialization> ID_SERIALIZATION_MAP = new HashMap<Byte, Serialization>();
+    /**
+     * 序列化名集合
+     * key：序列化类型编号 {@link Serialization#getContentTypeId()}
+     * value: 序列化拓展名
+     */
     private static Map<Byte, String> ID_SERIALIZATIONNAME_MAP = new HashMap<Byte, String>();
 
     static {
+        //通过拓展加载器得到序列化支持的拓展集合
         Set<String> supportedExtensions = ExtensionLoader.getExtensionLoader(Serialization.class).getSupportedExtensions();
         for (String name : supportedExtensions) {
+            //得到序列化对象
             Serialization serialization = ExtensionLoader.getExtensionLoader(Serialization.class).getExtension(name);
+            //得到内容类型id
             byte idByte = serialization.getContentTypeId();
+            //如果包含警告并且跳过
             if (ID_SERIALIZATION_MAP.containsKey(idByte)) {
                 logger.error("Serialization extension " + serialization.getClass().getName()
                         + " has duplicate id to Serialization extension "
@@ -66,6 +79,7 @@ public class CodecSupport {
     }
 
     public static Serialization getSerialization(URL url) {
+        //得到序列化对象
         return ExtensionLoader.getExtensionLoader(Serialization.class).getExtension(
                 url.getParameter(Constants.SERIALIZATION_KEY, Constants.DEFAULT_REMOTING_SERIALIZATION));
     }

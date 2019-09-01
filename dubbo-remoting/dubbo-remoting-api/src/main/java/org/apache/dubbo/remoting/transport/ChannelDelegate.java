@@ -25,6 +25,7 @@ import java.net.InetSocketAddress;
 
 /**
  * ChannelDelegate
+ * 委托模式
  */
 public class ChannelDelegate implements Channel {
 
