@@ -30,10 +30,12 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
  * The container class implementation for Spring
  */
 public class SpringContainer implements Container {
-
+    //spring容器配置
     public static final String SPRING_CONFIG = "dubbo.spring.config";
+    //默认spring配置
     public static final String DEFAULT_SPRING_CONFIG = "classpath*:META-INF/spring/*.xml";
     private static final Logger logger = LoggerFactory.getLogger(SpringContainer.class);
+    //ioc容器
     static ClassPathXmlApplicationContext context;
 
     public static ClassPathXmlApplicationContext getContext() {
@@ -42,12 +44,16 @@ public class SpringContainer implements Container {
 
     @Override
     public void start() {
+        //得到spring配置路径
         String configPath = ConfigUtils.getProperty(SPRING_CONFIG);
         if (StringUtils.isEmpty(configPath)) {
             configPath = DEFAULT_SPRING_CONFIG;
         }
+        //加载spring ioc 容器
         context = new ClassPathXmlApplicationContext(configPath.split("[,\\s]+"), false);
+        //刷新ioc容器
         context.refresh();
+        // 启动 Spring Context ，会触发 ContextStartedEvent 事件
         context.start();
     }
 

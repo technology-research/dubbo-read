@@ -53,8 +53,9 @@ public class LogbackContainer implements Container {
                 level = DEFAULT_LOGBACK_LEVEL;
             }
             // maxHistory=0 Infinite history
+            // 获得日志保留天数。若为零，则无限天数
             int maxHistory = StringUtils.parseInteger(ConfigUtils.getProperty(LOGBACK_MAX_HISTORY));
-
+            // 初始化 logback
             doInitializer(file, level, maxHistory);
         }
     }
@@ -75,14 +76,14 @@ public class LogbackContainer implements Container {
         Logger rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
         rootLogger.detachAndStopAllAppenders();
 
-        // appender
+        // appender 附加属性
         RollingFileAppender<ILoggingEvent> fileAppender = new RollingFileAppender<ILoggingEvent>();
         fileAppender.setContext(loggerContext);
         fileAppender.setName("application");
         fileAppender.setFile(file);
         fileAppender.setAppend(true);
 
-        // policy
+        // policy 策略
         TimeBasedRollingPolicy<ILoggingEvent> policy = new TimeBasedRollingPolicy<ILoggingEvent>();
         policy.setContext(loggerContext);
         policy.setMaxHistory(maxHistory);
@@ -91,13 +92,12 @@ public class LogbackContainer implements Container {
         policy.start();
         fileAppender.setRollingPolicy(policy);
 
-        // encoder
+        // encoder 编码器
         PatternLayoutEncoder encoder = new PatternLayoutEncoder();
         encoder.setContext(loggerContext);
         encoder.setPattern("%date [%thread] %-5level %logger (%file:%line\\) - %msg%n");
         encoder.start();
         fileAppender.setEncoder(encoder);
-
         fileAppender.start();
 
         rootLogger.addAppender(fileAppender);
