@@ -96,23 +96,30 @@ public class KryoObjectOutput implements ObjectOutput, Cleanable {
 
     @Override
     public void writeUTF(String v) throws IOException {
+        //写字符串
         output.writeString(v);
     }
 
     @Override
     public void writeObject(Object v) throws IOException {
+        //写对象
         // TODO carries class info every time.
         kryo.writeClassAndObject(output, v);
     }
 
     @Override
     public void flushBuffer() throws IOException {
+        //刷新缓冲区
         output.flush();
     }
 
+    /**
+     * 释放kryo对象
+     */
     @Override
     public void cleanup() {
         KryoUtils.release(kryo);
+        //gc 为了对象gc
         kryo = null;
     }
 }

@@ -157,6 +157,7 @@ public class KryoObjectInput implements ObjectInput, Cleanable {
     @Override
     public void cleanup() {
         KryoUtils.release(kryo);
+       //为了gc
         kryo = null;
     }
 }

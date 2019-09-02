@@ -18,8 +18,14 @@ package org.apache.dubbo.common.serialize.kryo.utils;
 
 public abstract class ReflectionUtils {
 
+    /**
+     * 判断类是否有空构造方法
+     * @param clazz
+     * @return
+     */
     public static boolean checkZeroArgConstructor(Class clazz) {
         try {
+            //这个方法会返回制定参数类型的所有构造器，包括public的和非public的，当然也包括private的。
             clazz.getDeclaredConstructor();
             return true;
         } catch (NoSuchMethodException e) {

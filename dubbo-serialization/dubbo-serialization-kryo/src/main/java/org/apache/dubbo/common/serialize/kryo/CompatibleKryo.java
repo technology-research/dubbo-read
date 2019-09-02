@@ -28,6 +28,11 @@ public class CompatibleKryo extends Kryo {
 
     private static final Logger logger = LoggerFactory.getLogger(CompatibleKryo.class);
 
+    /**
+     * 得到默认的序列化器
+     * @param type 类型
+     * @return
+     */
     @Override
     public Serializer getDefaultSerializer(Class type) {
         if (type == null) {
@@ -35,6 +40,8 @@ public class CompatibleKryo extends Kryo {
         }
 
         /**
+         *   // 空构造方法时，使用 JavaSerializer ，Java 原生序列化实现
+         *   Kryo要求每个类都提供一个零参数构造函数。对于任何类都不符合这个条件，kryo有两种方法:
          * Kryo requires every class to provide a zero argument constructor. For any class does not match this condition, kryo have two ways:
          * 1. Use JavaSerializer,
          * 2. Set 'kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));', StdInstantiatorStrategy can generate an instance bypassing the constructor.

@@ -20,12 +20,8 @@ import com.esotericsoftware.kryo.Kryo;
 
 public class ThreadLocalKryoFactory extends AbstractKryoFactory {
 
-    private final ThreadLocal<Kryo> holder = new ThreadLocal<Kryo>() {
-        @Override
-        protected Kryo initialValue() {
-            return create();
-        }
-    };
+    //线程隔离kryo
+    private final ThreadLocal<Kryo> holder = ThreadLocal.withInitial(this::create);
 
     @Override
     public void returnKryo(Kryo kryo) {
@@ -34,6 +30,7 @@ public class ThreadLocalKryoFactory extends AbstractKryoFactory {
 
     @Override
     public Kryo getKryo() {
+        //得到当前线程中的kryo对象
         return holder.get();
     }
 }

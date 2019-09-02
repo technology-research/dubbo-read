@@ -58,10 +58,11 @@ import java.util.regex.Pattern;
 
 public abstract class AbstractKryoFactory implements KryoFactory {
 
+    //需要注册的类集合
     private final Set<Class> registrations = new LinkedHashSet<Class>();
-
+    //是否必须注册
     private boolean registrationRequired;
-
+    //kryo是否创建
     private volatile boolean kryoCreated;
 
     public AbstractKryoFactory() {
@@ -72,27 +73,32 @@ public abstract class AbstractKryoFactory implements KryoFactory {
      * only supposed to be called at startup time
      *
      *  later may consider adding support for custom serializer, custom id, etc
+     *  Kryo 支持对注册行为，如 kryo.register(SomeClazz.class); ，这会赋予该 Class 一个从 0 开始的编号，但 Kryo 使用注册行为最大的问题在于，其不保证同一个 Class 每一次注册的号码相同，这与注册的顺序有关，也就意味着在不同的机器、同一个机器重启前后都有可能拥有不同的编号，
+     *  这会导致序列化产生问题，所以在分布式项目中，一般关闭注册行为。
      */
     public void registerClass(Class clazz) {
-
+        //如果kryo已经创建抛出异常
         if (kryoCreated) {
             throw new IllegalStateException("Can't register class after creating kryo instance");
         }
+        //否则加入需要注册类中
         registrations.add(clazz);
     }
 
     @Override
     public Kryo create() {
+        //如果kryo没有被创建
         if (!kryoCreated) {
             kryoCreated = true;
         }
-
+        //创建kryo
         Kryo kryo = new CompatibleKryo();
 
         // TODO
 //        kryo.setReferences(false);
+        //设置是否必须注册
         kryo.setRegistrationRequired(registrationRequired);
-
+        // 注册常用类
         kryo.register(Arrays.asList("").getClass(), new ArraysAsListSerializer());
         kryo.register(GregorianCalendar.class, new GregorianCalendarSerializer());
         kryo.register(InvocationHandler.class, new JdkProxySerializer());
@@ -104,7 +110,7 @@ public abstract class AbstractKryoFactory implements KryoFactory {
         kryo.register(UUID.class, new UUIDSerializer());
         UnmodifiableCollectionsSerializer.registerSerializers(kryo);
         SynchronizedCollectionsSerializer.registerSerializers(kryo);
-
+        // 注册常用数据结构
         // now just added some very common classes
         // TODO optimization
         kryo.register(HashMap.class);
@@ -130,11 +136,11 @@ public abstract class AbstractKryoFactory implements KryoFactory {
         kryo.register(int[].class);
         kryo.register(float[].class);
         kryo.register(double[].class);
-
+        // `registrations` 的注册
         for (Class clazz : registrations) {
             kryo.register(clazz);
         }
-
+        // SerializableClassRegistry 的注册
         SerializableClassRegistry.getRegisteredClasses().forEach((clazz, ser) -> {
             if (ser == null) {
                 kryo.register(clazz);
