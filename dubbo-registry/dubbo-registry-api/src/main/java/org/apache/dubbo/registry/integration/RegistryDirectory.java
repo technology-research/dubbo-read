@@ -89,26 +89,45 @@ import static org.apache.dubbo.rpc.cluster.Constants.ROUTER_KEY;
 public class RegistryDirectory<T> extends AbstractDirectory<T> implements NotifyListener {
 
     private static final Logger logger = LoggerFactory.getLogger(RegistryDirectory.class);
-
+    //集群自适应对象
     private static final Cluster CLUSTER = ExtensionLoader.getExtensionLoader(Cluster.class).getAdaptiveExtension();
-
+    //路由工厂自适应对象
     private static final RouterFactory ROUTER_FACTORY = ExtensionLoader.getExtensionLoader(RouterFactory.class)
             .getAdaptiveExtension();
-
+    //服务key
     private final String serviceKey; // Initialization at construction time, assertion not null
+    //服务类型
     private final Class<T> serviceType; // Initialization at construction time, assertion not null
+    //Consumer URL 的配置项 Map
     private final Map<String, String> queryMap; // Initialization at construction time, assertion not null
+    //directoryUrl
     private final URL directoryUrl; // Initialization at construction time, assertion not null, and always assign non null value
+    //是否引用多分组
     private final boolean multiGroup;
+    //注册在红河县的协议对象
     private Protocol protocol; // Initialization at the time of injection, the assertion is not null
+    //注册中心对象
     private Registry registry; // Initialization at the time of injection, the assertion is not null
+    /**
+     * 是否禁止访问。
+     *
+     * 有两种情况会导致：
+     *
+     * 1. 没有服务提供者
+     * 2. 服务提供者被禁用
+     */
     private volatile boolean forbidden = false;
-
+    /**
+     * 覆写的目录 URL ，结合配置规则
+     */
     private volatile URL overrideDirectoryUrl; // Initialization at construction time, assertion not null, and always assign non null value
-
+    /**
+     * 注册的消费组 URL
+     */
     private volatile URL registeredConsumerUrl;
 
     /**
+     * 配置规则数组
      * override rules
      * Priority: override>-D>consumer>provider
      * Rule one: for a certain provider <ip:port,timeout=100>
@@ -116,14 +135,19 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      */
     private volatile List<Configurator> configurators; // The initial value is null and the midway may be assigned to null, please use the local variable reference
 
+    //url于服务提供者Invoker集合的映射缓存
     // Map<url, Invoker> cache service url to invoker mapping.
     private volatile Map<String, Invoker<T>> urlInvokerMap; // The initial value is null and the midway may be assigned to null, please use the local variable reference
+    //服务提供者invoker集合
     private volatile List<Invoker<T>> invokers;
 
+    //缓存invoker集合
     // Set<invokerUrls> cache invokeUrls to invokers mapping.
     private volatile Set<URL> cachedInvokerUrls; // The initial value is null and the midway may be assigned to null, please use the local variable reference
 
+    //消费组配置监听器
     private static final ConsumerConfigurationListener CONSUMER_CONFIGURATION_LISTENER = new ConsumerConfigurationListener();
+    //服务配置监听器
     private ReferenceConfigurationListener serviceConfigurationListener;
 
 
@@ -143,10 +167,17 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
         this.multiGroup = group != null && (ANY_VALUE.equals(group) || group.contains(","));
     }
 
+    /**
+     * 调节注册中心url为消费组url
+     * @param url
+     * @return
+     */
     private URL turnRegistryUrlToConsumerUrl(URL url) {
         // save any parameter in registry that will be useful to the new url.
+        //在registry中保存对新url有用的任何参数。
         String isDefault = url.getParameter(DEFAULT_KEY);
         if (StringUtils.isNotEmpty(isDefault)) {
+            // 设置默认注册中心
             queryMap.put(REGISTRY_KEY + "." + DEFAULT_KEY, isDefault);
         }
         return URLBuilder.from(url)
@@ -166,9 +197,13 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
     }
 
     public void subscribe(URL url) {
+        //设置消费者URL
         setConsumerUrl(url);
+        // 添加消费组配置监听器
         CONSUMER_CONFIGURATION_LISTENER.addNotifyListener(this);
+        //设置服务配置监听器
         serviceConfigurationListener = new ReferenceConfigurationListener(this, url);
+        //订阅服务提供者
         registry.subscribe(url, this);
     }
 
@@ -568,13 +603,16 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
                     ", please check status of providers(disabled, not registered or in blacklist).");
         }
 
+        //如果引用多分组
         if (multiGroup) {
+            // 返回invoker集合或者空
             return this.invokers == null ? Collections.emptyList() : this.invokers;
         }
 
         List<Invoker<T>> invokers = null;
         try {
             // Get invokers from cache, only runtime routers will be executed.
+            //从缓存中获取调用器，只执行运行时路由器。
             invokers = routerChain.route(getConsumerUrl(), invocation);
         } catch (Throwable t) {
             logger.error("Failed to execute router: " + getUrl() + ", cause: " + t.getMessage(), t);

@@ -35,6 +35,7 @@ import static org.apache.dubbo.rpc.cluster.Constants.WEIGHT_KEY;
  */
 public abstract class AbstractLoadBalance implements LoadBalance {
     /**
+     * 根据预热时间占正常运行时间的比例计算重量新的权重将在1(含)到权重(含)之间
      * Calculate the weight according to the uptime proportion of warmup time
      * the new weight will be within 1(inclusive) to weight(inclusive)
      *
@@ -44,7 +45,9 @@ public abstract class AbstractLoadBalance implements LoadBalance {
      * @return weight which takes warmup into account
      */
     static int calculateWarmupWeight(int uptime, int warmup, int weight) {
+        // 计算权重
         int ww = (int) ((float) uptime / ((float) warmup / (float) weight));
+        //权重范围在[1,weight]之间
         return ww < 1 ? 1 : (ww > weight ? weight : ww);
     }
 
@@ -65,18 +68,24 @@ public abstract class AbstractLoadBalance implements LoadBalance {
     /**
      * Get the weight of the invoker's invocation which takes warmup time into account
      * if the uptime is within the warmup time, the weight will be reduce proportionally
-     *
+     * 考虑到 JVM 自身会有预热的过程，所以服务提供者一启动就直接承担 100% 的流量，
+     * 可能会出现很吃力的情况。因此权重的计算，默认自带了预热的过程。
      * @param invoker    the invoker
      * @param invocation the invocation of this invoker
      * @return weight
      */
     protected int getWeight(Invoker<?> invoker, Invocation invocation) {
+        //获得服务权重配置
         int weight = invoker.getUrl().getMethodParameter(invocation.getMethodName(), WEIGHT_KEY, DEFAULT_WEIGHT);
         if (weight > 0) {
+            //得到timestamp配置
             long timestamp = invoker.getUrl().getParameter(REMOTE_TIMESTAMP_KEY, 0L);
             if (timestamp > 0L) {
+                //获得启动总时长
                 int uptime = (int) (System.currentTimeMillis() - timestamp);
+                // 获得预热需要总时长。默认为 10 * 60 * 1000 = 10 分钟
                 int warmup = invoker.getUrl().getParameter(WARMUP_KEY, DEFAULT_WARMUP);
+                // 处于预热中，计算当前的权重
                 if (uptime > 0 && uptime < warmup) {
                     weight = calculateWarmupWeight(uptime, warmup, weight);
                 }

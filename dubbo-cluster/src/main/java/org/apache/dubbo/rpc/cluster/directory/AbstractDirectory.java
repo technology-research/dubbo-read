@@ -43,13 +43,19 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
 
     // logger
     private static final Logger logger = LoggerFactory.getLogger(AbstractDirectory.class);
-
+    //注册中心URL
     private final URL url;
-
+    //是否已经被销毁
     private volatile boolean destroyed = false;
-
+    /**
+     *     消费组url
+     * 若未显示调用 {@link #AbstractDirectory(URL, URL, List)} 构造方法，consumerUrl 等于 {@link #url}
+     */
     private volatile URL consumerUrl;
 
+    /**
+     * 路由链
+     */
     protected RouterChain<T> routerChain;
 
     public AbstractDirectory(URL url) {
@@ -65,10 +71,14 @@ public abstract class AbstractDirectory<T> implements Directory<T> {
             throw new IllegalArgumentException("url == null");
         }
 
+        //根据url得到协议是否等于registry
         if (url.getProtocol().equals(REGISTRY_PROTOCOL)) {
+            //解析查询map
             Map<String, String> queryMap = StringUtils.parseQueryString(url.getParameterAndDecoded(REFER_KEY));
+            //得到注册中心url
             this.url = url.addParameters(queryMap).removeParameter(MONITOR_KEY);
         } else {
+            //否则直接通过url传递
             this.url = url;
         }
 

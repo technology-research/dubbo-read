@@ -40,22 +40,32 @@ public class ConsistentHashLoadBalance extends AbstractLoadBalance {
 
     /**
      * Hash nodes name
+     * hash节点名称
      */
     public static final String HASH_NODES = "hash.nodes";
 
     /**
      * Hash arguments name
+     * 散列参数名称
      */
     public static final String HASH_ARGUMENTS = "hash.arguments";
 
+    /**
+     * 服务方法与一致性哈希选择器的映射
+     *
+     * KEY：serviceKey + "." + methodName
+     */
     private final ConcurrentMap<String, ConsistentHashSelector<?>> selectors = new ConcurrentHashMap<String, ConsistentHashSelector<?>>();
 
     @SuppressWarnings("unchecked")
     @Override
     protected <T> Invoker<T> doSelect(List<Invoker<T>> invokers, URL url, Invocation invocation) {
+        //方法名
         String methodName = RpcUtils.getMethodName(invocation);
         String key = invokers.get(0).getUrl().getServiceKey() + "." + methodName;
+        //得到身份散列值
         int identityHashCode = System.identityHashCode(invokers);
+        //取得一致性哈希选择器
         ConsistentHashSelector<T> selector = (ConsistentHashSelector<T>) selectors.get(key);
         if (selector == null || selector.identityHashCode != identityHashCode) {
             selectors.put(key, new ConsistentHashSelector<T>(invokers, methodName, identityHashCode));
@@ -66,29 +76,51 @@ public class ConsistentHashLoadBalance extends AbstractLoadBalance {
 
     private static final class ConsistentHashSelector<T> {
 
+        /**
+         * 虚拟节点上的invoker
+         */
         private final TreeMap<Long, Invoker<T>> virtualInvokers;
 
+        /**
+         * 每个invoker对应的虚拟节点数
+         */
         private final int replicaNumber;
 
+        /**
+         * 定义哈希值
+         */
         private final int identityHashCode;
 
+        /**
+         * 取值参数位置数组
+         */
         private final int[] argumentIndex;
 
         ConsistentHashSelector(List<Invoker<T>> invokers, String methodName, int identityHashCode) {
+            //设置虚拟invoker
             this.virtualInvokers = new TreeMap<Long, Invoker<T>>();
+            //定义哈希值
             this.identityHashCode = identityHashCode;
+            //得到url
             URL url = invokers.get(0).getUrl();
+            //得到每个invoker对应的虚拟节点数，默认160
             this.replicaNumber = url.getMethodParameter(methodName, HASH_NODES, 160);
+            //得到hash参数值
             String[] index = COMMA_SPLIT_PATTERN.split(url.getMethodParameter(methodName, HASH_ARGUMENTS, "0"));
+            //解析参数到argumentIndex
             argumentIndex = new int[index.length];
             for (int i = 0; i < index.length; i++) {
                 argumentIndex[i] = Integer.parseInt(index[i]);
             }
             for (Invoker<T> invoker : invokers) {
                 String address = invoker.getUrl().getAddress();
+                // 每四个虚拟结点为一组，为什么这样？下面会说到
                 for (int i = 0; i < replicaNumber / 4; i++) {
+                    // 这组虚拟结点得到唯一名称
                     byte[] digest = md5(address + i);
+                    // Md5是一个16字节长度的数组，将16字节的数组每四个字节一组，分别对应一个虚拟结点，这就是为什么上面把虚拟结点四个划分一组的原因
                     for (int h = 0; h < 4; h++) {
+                        // 对于每四个字节，组成一个long值数值，做为这个虚拟节点的在环中的惟一key
                         long m = hash(digest, h);
                         virtualInvokers.put(m, invoker);
                     }
