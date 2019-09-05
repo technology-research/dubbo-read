@@ -60,21 +60,33 @@ public abstract class AbstractConfigurator implements Configurator {
         return configuratorUrl;
     }
 
+    /**
+     * 配置提供者url
+     * @param url - old provider url.
+     * @return
+     */
     @Override
     public URL configure(URL url) {
+        //如果覆盖url未启用或无效，则返回。
         // If override url is not enabled or is invalid, just return.
         if (!configuratorUrl.getParameter(ENABLED_KEY, true) || configuratorUrl.getHost() == null || url == null || url.getHost() == null) {
             return url;
         }
         /**
          * This if branch is created since 2.7.0.
+         * 得到配置版本
          */
         String apiVersion = configuratorUrl.getParameter(CONFIG_VERSION_KEY);
         if (StringUtils.isNotEmpty(apiVersion)) {
+            //得当当前是消费组还是生产者
             String currentSide = url.getParameter(SIDE_KEY);
+            //得到配置所属
             String configuratorSide = configuratorUrl.getParameter(SIDE_KEY);
+            //如果来者相同，并且为消费者配置并且端口为0
             if (currentSide.equals(configuratorSide) && CONSUMER.equals(configuratorSide) && 0 == configuratorUrl.getPort()) {
+                //消费者url
                 url = configureIfMatch(NetUtils.getLocalHost(), url);
+                //提供者配置 url
             } else if (currentSide.equals(configuratorSide) && PROVIDER.equals(configuratorSide) && url.getPort() == configuratorUrl.getPort()) {
                 url = configureIfMatch(url.getHost(), url);
             }
@@ -85,6 +97,7 @@ public abstract class AbstractConfigurator implements Configurator {
         else {
             url = configureDeprecated(url);
         }
+        //返回url
         return url;
     }
 
@@ -108,15 +121,20 @@ public abstract class AbstractConfigurator implements Configurator {
     }
 
     private URL configureIfMatch(String host, URL url) {
+        //如果host为0.0.0.0或者host为配置器URl端口
         if (ANYHOST_VALUE.equals(configuratorUrl.getHost()) || host.equals(configuratorUrl.getHost())) {
             // TODO, to support wildcards
+            //得到提供者们地址
             String providers = configuratorUrl.getParameter(OVERRIDE_PROVIDERS_KEY);
             if (StringUtils.isEmpty(providers) || providers.contains(url.getAddress()) || providers.contains(ANYHOST_VALUE)) {
+                //   // 匹配 "application"
                 String configApplication = configuratorUrl.getParameter(APPLICATION_KEY,
                         configuratorUrl.getUsername());
+                //当前application
                 String currentApplication = url.getParameter(APPLICATION_KEY, url.getUsername());
                 if (configApplication == null || ANY_VALUE.equals(configApplication)
                         || configApplication.equals(currentApplication)) {
+                    // 配置 URL 中的条件 KEYS 集合。其中下面四个 KEY ，不算是条件，而是内置属性。考虑到下面要移除，所以添加到该集合中。
                     Set<String> conditionKeys = new HashSet<String>();
                     conditionKeys.add(CATEGORY_KEY);
                     conditionKeys.add(Constants.CHECK_KEY);
@@ -128,6 +146,7 @@ public abstract class AbstractConfigurator implements Configurator {
                     conditionKeys.add(SIDE_KEY);
                     conditionKeys.add(CONFIG_VERSION_KEY);
                     conditionKeys.add(COMPATIBLE_CONFIG_KEY);
+                    // 判断传入的 url 是否匹配配置规则 URL 的条件。除了 "application" 和 "side" 之外，带有 `"~"` 开头的 KEY ，也是条件。
                     for (Map.Entry<String, String> entry : configuratorUrl.getParameters().entrySet()) {
                         String key = entry.getKey();
                         String value = entry.getValue();

@@ -23,6 +23,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 讲map数组合并成一个map
+ */
 public class MapMerger implements Merger<Map<?, ?>> {
 
     @Override

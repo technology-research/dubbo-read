@@ -80,7 +80,7 @@ public class MergeableClusterInvoker<T> extends AbstractClusterInvoker<T> {
             }
             return invokers.iterator().next().invoke(invocation);
         }
-
+// 通过反射，获得返回类型
         Class<?> returnType;
         try {
             returnType = getInterface().getMethod(
